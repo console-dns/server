@@ -1,0 +1,47 @@
+<div class="modal fade" id="zone-add-dialog" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="row g-3 needs-validation" method="post" action="/zones" novalidate>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新增区域</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="col-md">
+                        <label for="zone-input" class="form-label">区域名称</label>
+                        <input name="zone" type="text" pattern="{{ .Regex.Host }}" class="form-control" id="zone-input" required>
+                        <div class="invalid-feedback">
+                            区域名称不合法, 格式为 <code>'小写字母/数字'.'小写字母/数字'</code> 例如 <code>example.com</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="submit" class="btn btn-primary" >创建</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    if (document.zoneAddDialog === undefined) {
+        dialog = document.getElementById('zone-add-dialog')
+        document.zoneAddDialog = new bootstrap.Modal(dialog, {
+            keyboard: true
+        })
+        const forms = document.querySelectorAll('.needs-validation')
+        // Loop over them and prevent submission
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    }
+    document.zoneAddDialog.toggle();
+
+</script>

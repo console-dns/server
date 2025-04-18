@@ -1,0 +1,9 @@
+!.gitkeep
+/.idea
+*.iml
+/local.yaml
+/conf/*.yml
+/conf/*.yaml
+/conf/*.csv
+/conf/*.bin
+/console-dns

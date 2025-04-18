@@ -1,0 +1,76 @@
+<!-- Modal -->
+<div class="modal fade" id="client-add-rule-modal" tabindex="-1"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">在 <code>{{.Client}}</code> 下
+                    {{- if .IsUpdate -}}
+                        修改策略 <code>{{ .RuleName }}</code>
+                    {{- else -}}
+                        新增策略
+                    {{- end -}}
+                </h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/clients/{{ .Client }}/rules{{- if .IsUpdate -}}/{{ .RuleName }}{{- end -}}"
+                  method="post" x-data="{
+            dnsType: '{{- if .IsUpdate -}}{{ .Record }}{{- else -}}A{{- end -}}',
+            permission: '{{- if .IsUpdate -}}{{ .Permission }}{{- else -}}ro{{- end -}}'
+            }">
+                <div class="modal-body">
+                    <div class=" mb-3">
+                        <label for="name" class="form-label">名称</label>
+                        <input name="name" type="text" pattern="{{ .Regex.IDName }}"
+                               value="{{- if .IsUpdate -}}{{ .RuleName }}{{- end -}}"
+                               class="form-control" id="name" {{- if .IsUpdate }} disabled {{ end -}} required>
+                        <div class="form-text">名称建议使用小写单词+数字</div>
+
+                    </div>
+                    <div class="mb-3">
+                        <label for="host" class="form-label">记录</label>
+                        <div class="input-group">
+                            <span class="input-group-text">^</span>
+                            <input name="host" type="text" value="{{- if .IsUpdate -}}{{ .Host }}{{- end -}}"
+                                   class="form-control" id="host" required>
+                            <span class="input-group-text">$</span>
+                        </div>
+                        <div class="form-text">记录使用正则表达式进行匹配</div>
+
+                    </div>
+                    <div class="mb-3">
+                        <label for="type" class="form-label">记录类型</label>
+                        <select name="type" class="form-select" x-model="dnsType" id="type" required>
+                            <option value="*">所有类型</option>
+                            {{ include "common/dns-type" . }}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="type" class="form-label">操作权限</label>
+                        <select id="type" name="permission" x-model="permission" class="form-select">
+                            <option value="ro" selected>只读</option>
+                            <option value="ru">读取/更新</option>
+                            <option value="rw">读取/更新/删除</option>
+                        </select>
+                        <div class="form-text">默认权限为不可读写，这也是未匹配策略的权限</div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    {{- if .IsUpdate }}
+                        <button type="submit" class="btn btn-warning">修改</button>
+                    {{- else }}
+                        <button type="submit" class="btn btn-info">创建</button>
+                    {{- end }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    new bootstrap.Modal('#client-add-rule-modal', {
+        keyboard: true
+    }).toggle()
+</script>

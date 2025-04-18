@@ -1,0 +1,29 @@
+<!-- Modal -->
+<div class="modal fade" id="reset-token-modal" tabindex="-1"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">重置 {{ .Name }} 的 Token</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                你确定要重置客户端 <code>{{ .Name }}</code> 的 Token 吗，这将会导致现有应用全部失效！
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-warning"
+                        hx-target="#reset-token-input"
+                        hx-swap="outerHTML"
+                        hx-post="/clients/!/clients/{{ $.Name }}/resetToken"
+                        data-bs-dismiss="modal">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    new bootstrap.Modal('#reset-token-modal', {
+        keyboard: true
+    }).toggle()
+</script>

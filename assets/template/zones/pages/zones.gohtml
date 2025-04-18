@@ -1,0 +1,41 @@
+{{ include "common/header" . }}
+
+<div class="row ps-3 pe-3 m-0" x-data="{ select:'{{- include "zones/templates/select" $ -}}' }"
+     x-init="
+     if (select !== ''){
+        updateLocation('select',select)
+     }
+$watch('select',()=>{
+            updateLocation('select',select)
+            htmx.process(document.querySelector('#zone-detail'))
+})
+">
+    <div class="col-md-3">
+        <div class="list-group mt-3">
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <p class="m-0 p-0">区域列表</p>
+                <button class="btn text-info btn-sm"
+                        hx-post="/zones/!/zones"
+                        hx-target="#dialog-content"
+                ><i class="fa-solid fa-plus"></i></button>
+            </div>
+            {{- range $i,$v := .Data.Zones }}
+                <div class="list-group-item pt-0 pb-0 d-flex justify-content-between align-items-center"
+                     :class="{ 'active':select === '{{ $v }}' }">
+                    <div class="name w-100"
+                         style="padding: var(--bs-list-group-item-padding-y) 0;"
+                         @click="select = '{{- $v -}}'">{{- $v -}}</div>
+                    <div class="btn-group">
+                        <button type="button" hx-target="#dialog-content" hx-post="/zones/!/zone/{{ $v }}"
+                                class="btn"><i class="fa-solid fa-plus"></i></button>
+                        <button class="btn text-danger btn-sm"
+                                hx-target="#dialog-content"
+                                hx-delete="/zones/!/zones/{{ $v }}"
+                        ><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            {{- end }}
+        </div>
+    </div>
+    <div class="col-md-9" :hx-get="'/zones/!/zones/'+select" hx-trigger="load" id="zone-detail"></div>
+</div>

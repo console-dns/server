@@ -1,0 +1,41 @@
+{{- if .Data }}
+<div class="detail-table w-100 table-responsive mt-3">
+    <table class="table text-center text-nowrap">
+        <thead>
+        <tr>
+            <th scope="col">类型</th>
+            <th scope="col">名称</th>
+            <th scope="col">内容</th>
+            <th scope="col">TTL</th>
+            <th scope="col">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{- range $i,$v := .Data}}
+            <tr>
+                <th style="vertical-align: middle !important;text-align: center;" scope="row">{{ $v.Type }}</th>
+                <td style="vertical-align: middle !important;text-align: center;">{{ $v.Name }}</td>
+                <td style="vertical-align: middle !important;text-align: center;">{{ $v.Value }}</td>
+                {{- if eq $v.Type "CAA" }}
+                    <td style="vertical-align: middle !important;text-align: center;">-</td>
+                {{- else }}
+                    <td style="vertical-align: middle !important;text-align: center;">{{ $v.TTL }}</td>
+                {{- end }}
+                <td style="vertical-align: middle !important;text-align: center;">
+                    <button class="btn text-info" hx-target="#dialog-content"
+                            hx-put="/zones/!/zone/{{ $.Zone }}/{{ $v.Type }}/{{ $v.Name }}/{{ $v.Index }}">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button class="btn text-danger" hx-target="#dialog-content"
+                            hx-delete="/zones/!/zone/{{ $.Zone }}/{{ $v.Type }}/{{ $v.Name }}/{{ $v.Index }}/{{ $v.Value }}"
+                    ><i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        {{- end}}
+        </tbody>
+    </table>
+</div>
+{{-  else }}
+    <p class="text-center text-warning mt-3">当前区域没有配置 DNS 记录，请在列表页添加</p>
+{{- end  }}

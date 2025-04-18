@@ -1,0 +1,40 @@
+{{ include "common/header" . }}
+<div class="p-2 m-2 row"
+     x-data="{
+     select:'{{- if .Data.Clients }}{{- if .Data.Select }}{{ .Data.Select }}{{ else }}{{ index .Data.Clients 0 }}{{ end }}{{- end }}',
+      tab: getUrlParam('tab','token')
+      }"
+     {{- if .Data.Clients }}x-init="
+     updateLocation('select','{{- if .Data.Select }}{{ .Data.Select }}{{ else }}{{ index .Data.Clients 0 }}{{ end }}')" {{- end }}>
+    <div class="left col-md-3 mb-2" x-init="$watch('select',value=>{
+            htmx.process(document.querySelector('#client-detail'))
+})">
+        <div class="list-group">
+            <div class="list-group-item input-group list-group-item-action d-flex justify-content-between align-items-center">
+                <p class="p-0 m-0 active">客户端列表</p>
+                <p class="p-0 m-0">管理</p>
+            </div>
+            {{- range $k,$v := .Data.Clients }}
+                <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center "
+                     :class="{ 'active':select === '{{ $v }}' }">
+                    <div class="m-0 p-1 w-100"
+                         x-on:click="select = '{{ $v }}'; updateLocation('select','{{ $v }}');"
+                    >{{ $v }}</div>
+                    <button class="btn btn-sm text-danger" hx-target="#dialog-content"
+                            hx-delete="/clients/!/clients/{{ $v }}"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            {{- end }}
+            <form action="/clients" method="post"
+                  class="list-group-item input-group list-group-item-action d-flex justify-content-between align-items-center">
+                <input name="name" pattern="{{ $.Data.Regex.IDName }}" minlength="2" maxlength="10"
+                       class="form-control form-control-sm" type="text" placeholder=""
+                       aria-label=".form-control-sm example" required>
+                <button class="btn btn-sm btn-outline-info" type="submit"><i class="fa-solid fa-plus"></i></button>
+            </form>
+        </div>
+    </div>
+    <template x-if="select !== ''">
+        <div class="right col-md-9" id="client-detail" :hx-get="'/clients/!/clients/' + select" hx-trigger="load">
+        </div>
+    </template>
+</div>

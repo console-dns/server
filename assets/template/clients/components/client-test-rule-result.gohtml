@@ -1,0 +1,12 @@
+{{- if eq .Status "ro" -}}
+    <span class="text-info">此内容可被读取</span>
+{{- end -}}
+{{- if eq .Status "ru" -}}
+    此内容可被<span class="text-warning">创建</span>或<span class="text-warning">修改</span>
+{{- end -}}
+{{- if eq .Status "rw" -}}
+    此内容可被<span class="text-warning">创建</span>、<span class="text-warning">修改</span>、<span class="text-danger">删除</span>
+{{- end -}}
+{{- if eq .Status "no" -}}
+    <span class="text-info">此内容不可见</span>
+{{- end -}}

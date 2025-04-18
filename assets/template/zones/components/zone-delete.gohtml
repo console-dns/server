@@ -1,0 +1,47 @@
+<!-- Modal -->
+<div class="modal fade" id="delete-zone-item-modal" tabindex="-1"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">删除 {{ .Zone }} 下 {{.Type}} 记录</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p> 你确定要删除以下记录吗？</p>
+                <div class="row">
+                    <div class="col-3">区域</div>
+                    <div class="col-7"><code>{{ .Zone }}</code></div>
+                </div>
+                <div class="row">
+                    <div class="col-3">名称</div>
+                    <div class="col-7"><code>{{ .Name }}</code></div>
+                </div>
+                <div class="row">
+                    <div class="col-3">记录类型</div>
+                    <div class="col-7"><code>{{ .Type }}</code></div>
+                </div>
+                <div class="row">
+                    <div class="col-3">记录值</div>
+                    <div class="col-7"><code>{{ .Value }}</code></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form action="/zones/{{ .Zone }}/delete" method="post">
+                    <input type="hidden" class="hidden" name="zone" value="{{ .Zone }}">
+                    <input type="hidden" class="hidden" name="name" value="{{ .Name }}">
+                    <input type="hidden" class="hidden" name="type" value="{{ .Type }}">
+                    <input type="hidden" class="hidden" name="index" value="{{ .Index }}">
+                    <button type="submit" class="btn btn-danger">删除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    new bootstrap.Modal('#delete-zone-item-modal', {
+        keyboard: true
+    }).toggle()
+</script>

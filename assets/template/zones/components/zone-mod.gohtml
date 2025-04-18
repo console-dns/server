@@ -1,0 +1,275 @@
+{{- $isUpdate := eq .Mode "update"  }}
+<div class="modal fade" id="zone-mod-modal" tabindex="-1"
+     aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-scrollable" x-data="{ dnsType: '{{ .Type }}' }">
+            <form action="/zones/{{.Zone}}" class="m-0" method="post"
+                  x-init="$watch('dnsType',function(event) {
+                document._zoneMod.handleUpdate()
+            })">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">
+                        {{- if $isUpdate }}修改DNS记录{{ else }}创建DNS记录{{ end }}
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 m-0">
+                        {{- if $isUpdate }}
+                            <p class="text-warning m-0">任何修改操作将在保存后立即生效，请谨慎操作</p>
+                        {{- end}}
+                        <div class="col-md-12">
+                            <div class="input-group flex-nowrap col">
+                                {{- if $isUpdate }}
+                                    <input type="hidden" name="name" value="{{ .Name }}">
+                                    <input type="hidden" name="action" value="update">
+                                    <input type="hidden" name="index" value="{{ .Index }}">
+                                    <input type="hidden" name="type" value="{{ .Type }}">
+                                {{- end }}
+                                <span class="input-group-text" id="addon-wrapping">名称</span>
+                                <input name="name" pattern="{{ .Regex.DnsName }}" type="text" class="form-control"
+                                       placeholder=""
+                                       {{if $isUpdate }}disabled{{end}}
+                                       aria-label="名称" value="{{- if eq .Mode "update" }}{{ .Name }}{{- end }}"
+                                       aria-describedby="addon-wrapping" required>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="input-group">
+                                <label class="input-group-text" for="inputGroupSelect01">类型</label>
+                                <select name="type" class="form-select" {{if $isUpdate }}disabled{{end}}
+                                        x-model="dnsType" id="inputGroupSelect01">
+                                    {{ include "common/dns-type" . }}
+                                </select>
+                            </div>
+                        </div>
+                        <template x-if="dnsType !== 'CAA'">
+                            <div class="col-md-12">
+                                <div class="input-group" x-data="{
+                    ttlList:[
+                    {ttl: '60',name : '1分钟'},
+                    {ttl: '120',name : '2分钟'},
+                    {ttl: '300',name : '5分钟'},
+                    {ttl: '300',name : '5分钟'},
+                    {ttl: '1800',name : '30分钟'},
+                    {ttl: '3600',name : '1小时'},
+                    {ttl: '7200',name : '2小时'},
+                    {ttl: '86400',name : '24小时'},
+                    {ttl: '172800',name : '48小时'}
+                    ],
+                    ttl: '{{- include "zones/templates/ttl" $ -}}'
+                    }
+">
+                                    <label class="input-group-text" for="inputGroupSelect01">TTL</label>
+                                    <select name="ttl" class="form-select" id="inputGroupSelect01">
+                                        <template x-for="t in ttlList">
+                                            <option x-bind:value="t.ttl" x-text="t.name"
+                                                    x-bind:selected="t.ttl === ttl">自动
+                                            </option>
+                                        </template>
+
+                                    </select>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    {{- $child := index .Record .Type -}}
+                    <div class="dns-input pt-2">
+                        <template x-if="dnsType === 'A'">
+                            <div class="row g-3 m-0">
+                                <div class="col">
+                                    <label for="ip" class="form-label">IPv4 地址</label>
+                                    <input pattern="{{ .Regex.Ipv4 }}"
+                                           value="{{- if and $isUpdate (eq .Type "A") }}{{(index $child $.Index ).Ip }}{{- end}}"
+                                           name="ip" type="text"
+                                           class="form-control" id="ip" required>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dnsType === 'AAAA'">
+                            <div class="row g-3 m-0">
+                                <div class="col">
+                                    <label for="ip" class="form-label">IPv6 地址</label>
+                                    <input pattern="{{ .Regex.Ipv6 }}"
+                                           value="{{- if and $isUpdate (eq .Type "AAAA") }}{{(index $child $.Index ).Ip }}{{- end}}"
+                                           name="ip" type="text" class="form-control" id="ip" required>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dnsType === 'TXT'">
+                            <div class="row g-3 m-0">
+                                <div class="col">
+                                    <label for="text" class="form-label">内容</label>
+                                    <input name="text"
+                                           value="{{- if and $isUpdate (eq .Type "TXT") }}{{(index $child $.Index ).Text }}{{- end}}"
+                                           type="text" class="form-control" id="text" required>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dnsType === 'CNAME'">
+                            <div class="row g-3 m-0">
+                                <div class="col">
+                                    <label for="host" class="form-label">目标</label>
+                                    <input pattern="{{ .Regex.Host }}"
+                                           value="{{- if and $isUpdate (eq .Type "CNAME") }}{{(index $child $.Index ).Host }}{{- end}}"
+                                           name="host" type="text" class="form-control" id="host" required>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dnsType === 'NS'">
+                            <div class="row g-3 m-0">
+                                <div class="col">
+                                    <label for="host" class="form-label">名称服务器</label>
+                                    <input pattern="{{ .Regex.Host }}"
+                                           value="{{- if and $isUpdate (eq .Type "NS") }}{{(index $child $.Index ).Host }}{{- end}}"
+                                           name="host" type="text" class="form-control" id="host"
+                                           required>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dnsType === 'MX'">
+                            <div class="row g-3 m-0">
+                                <div class="col-md-6">
+                                    <label for="host" class="form-label">邮件服务器</label>
+                                    <input pattern="{{ .Regex.Host }}"
+                                           value="{{- if and $isUpdate (eq .Type "NX") }}{{(index $child $.Index ).Host }}{{- end}}"
+                                           name="host" type="text" class="form-control" id="host"
+                                           required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="preference" class="form-label">优先级</label>
+                                    <input name="preference"
+                                           value="{{- if and $isUpdate (eq .Type "MX") }}{{(index $child $.Index ).Preference }}{{- end}}"
+                                           pattern="\d" type="number" class="form-control" id="preference"
+                                           required>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dnsType === 'SRV'">
+                            <div class="row g-3 m-0">
+                                <div class="col-md-12">
+                                    <label for="priority" class="form-label">优先级</label>
+                                    <input name="priority"
+                                           value="{{- if and $isUpdate (eq .Type "SRV") }}{{(index $child $.Index ).Priority }}{{- end}}"
+                                           pattern="\d" type="number" class="form-control" id="priority" required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="weight" class="form-label">权重</label>
+                                    <input name="weight"
+                                           value="{{- if and $isUpdate (eq .Type "SRV") }}{{(index $child $.Index ).Weight }}{{- end}}"
+                                           pattern="\d" type="number" class="form-control" id="weight" required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="port" class="form-label">端口</label>
+                                    <input name="port"
+                                           value="{{- if and $isUpdate (eq .Type "SRV") }}{{(index $child $.Index ).Port }}{{- end}}"
+                                           pattern="\d" type="number" class="form-control" id="port" required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="target" class="form-label">目标</label>
+                                    <input name="target"
+                                           value="{{- if and $isUpdate (eq .Type "SRV") }}{{(index $child $.Index ).Target }}{{- end}}"
+                                           pattern="{{ .Regex.Host }}" type="text" class="form-control" id="target"
+                                           required>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dnsType === 'CAA'">
+                            <div class="row g-3 m-0">
+                                <div class="col-md-12">
+                                    <label for="flag" class="form-label">标志</label>
+                                    <input name="flag"
+                                           type="text" class="form-control" id="flag" value="0" disabled required>
+                                </div>
+                                <div class="col-md-12" x-data="{
+                    selected:'{{- if and $isUpdate (eq .Type "CAA") }}{{(index $child $.Index ).Tag }}{{- else -}}issue{{- end}}'
+                    }">
+                                    <label for="tag" class="form-label">标记</label>
+                                    <select name="tag" id="tag" x-model="selected" class="form-select">
+                                        <option value="issue" selected>仅允许使用特定主机名</option>
+                                        <option value="issuewild">仅允许使用通配符</option>
+                                        <option value="iodef">向URL发送违例报告</option>
+                                        <option value="contactemail">联系人的电子邮件</option>
+                                        <option value="contactphone">联系人的电话</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="value" class="form-label">标记内容</label>
+                                    <input name="value"
+                                           value="{{- if and $isUpdate (eq .Type "CAA") }}{{(index $child $.Index ).Value }}{{- end}}"
+                                           pattern="{{ .Regex.Host }}" type="text" class="form-control" id="value"
+                                           required>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dnsType === 'SOA'">
+                            <div class="row g-3 m-0">
+                                <div class="col-md-12">
+                                    <label for="mname" class="form-label">MNAME</label>
+                                    <input name="mname"
+                                           value="{{- if and $isUpdate (eq .Type "SOA") }}{{$child.MName }}{{- end}}"
+                                           pattern="{{ .Regex.Host }}" type="text" class="form-control" id="mname"
+                                           required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="rname" class="form-label">RNAME</label>
+                                    <input name="rname"
+                                           value="{{- if and $isUpdate (eq .Type "SOA") }}{{$child.RName }}{{- end}}"
+                                           pattern="{{ .Regex.Host }}" type="text" class="form-control" id="rname"
+                                           required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="serial" class="form-label">SERIAL</label>
+                                    <input name="serial"
+                                           value="{{- if and $isUpdate (eq .Type "SOA") }}{{$child.Serial }}{{- end}}"
+                                           pattern="\d" type="number" class="form-control" id="weight" required>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="refresh" class="form-label">REFRESH</label>
+                                    <input name="refresh"
+                                           value="{{- if and $isUpdate (eq .Type "SOA") }}{{$child.Refresh }}{{- end}}"
+                                           pattern="\d" type="number" class="form-control" id="refresh" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="retry" class="form-label">RETRY</label>
+                                    <input name="retry"
+                                           value="{{- if and $isUpdate (eq .Type "SOA") }}{{$child.Retry }}{{- end}}"
+                                           type="number" pattern="\d" class="form-control" id="retry" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="expire" class="form-label">EXPIRE</label>
+                                    <input name="expire"
+                                           value="{{- if and $isUpdate (eq .Type "SOA") }}{{$child.Expire }}{{- end}}"
+                                           type="number" pattern="\d" class="form-control" id="expire" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="minimum" class="form-label">MINIMUM</label>
+                                    <input name="minimum"
+                                           value="{{- if and $isUpdate (eq .Type "SOA") }}{{$child.Minimum }}{{- end}}"
+                                           type="number" pattern="\d" class="form-control" id="minimum" required>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    {{- if $isUpdate }}
+                        <button type="submit" class="btn btn-warning">修改</button>
+                    {{- else}}
+                        <button type="submit" class="btn btn-primary">创建</button>
+                    {{- end }}
+                </div>
+            </div>
+            </form>
+        </div>
+</div>
+
+<script>
+    document._zoneMod = new bootstrap.Modal('#zone-mod-modal', {
+        keyboard: true
+    });
+    document._zoneMod.toggle()
+</script>

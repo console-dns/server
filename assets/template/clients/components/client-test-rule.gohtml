@@ -1,0 +1,55 @@
+<!-- Modal -->
+<div class="modal fade" id="rule-verify-modal" tabindex="-1"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">验证策略 <code>{{ .RuleName }}</code></h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" x-data="{
+             zone: '',
+             name:'',
+             type:''
+            }" x-init="
+$watch('zone',value=>{
+            htmx.process(document.querySelector('#check-btn'))
+})
+$watch('name',value=>{
+            htmx.process(document.querySelector('#check-btn'))
+})
+$watch('type',value=>{
+            htmx.process(document.querySelector('#check-btn'))
+})
+">
+                <p>在下方输入想要验证的内容，输入完成后点击 <code>验证</code> 即可</p>
+                <div class="mb-3">
+                    <label for="zone" class="form-label">区域</label>
+                    <input type="text" x-model="zone" class="form-control" id="zone">
+                </div>
+                <div class="mb-3">
+                    <label for="name" class="form-label">名称</label>
+                    <input type="text" x-model="name" class="form-control" id="name">
+                </div>
+                <div class="mb-3">
+                    <label for="type" class="form-label">DNS类型</label>
+                    <select name="type" x-model="type"  class="form-select"  id="type" required>
+                        {{ include "common/dns-type" . }}
+                    </select>
+                </div>
+                <div id="check-status" class="text-center mb-2"></div>
+                <button type="button" id="check-btn" hx-target="#check-status"
+                        x-bind:hx-vals='"{\"zone\":\"" + zone + "\",\"name\":\""+name + "\",\"type\":\""+ type + "\"}"'
+                        hx-post="/clients/!/clients/{{ .Client }}/rules/{{ .RuleName }}/verify"
+                        class="btn btn-info w-100 mw-100">验证
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    new bootstrap.Modal('#rule-verify-modal', {
+        keyboard: true
+    }).toggle()
+</script>

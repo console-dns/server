@@ -1,0 +1,48 @@
+{{ $depth := 2 }}
+<div class="head d-flex flex-wrap ">
+    <nav class="w-100">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {{if eq $.PageIndex 0}}disabled{{ end }}">
+                <button class="page-link"
+                        hx-target="#logs-detail-content-{{ $.HtmlId }}"
+                        hx-swap="outerHTML"
+                        hx-get="/logs/!/query?index=0&length={{$.PageLength }}&{{ $.Params }}"
+                ><i class="fa-solid fa-backward-fast"></i>
+                </button>
+            </li>
+            <li class="page-item d-none d-sm-block {{if eq $.PageIndex 0}}disabled{{ end }}">
+                <button class="page-link"
+                        hx-target="#logs-detail-content-{{ $.HtmlId }}"
+                        hx-swap="outerHTML"
+                        hx-get="/logs/!/query?index={{ sub $.PageIndex 1 }}&length={{$.PageLength }}&{{ $.Params }}"
+                ><i class="fa-solid fa-backward"></i>
+                </button>
+            </li>
+            {{ range $v,$k := .Pages }}
+                    <li class="page-item">
+                        <button class="page-link font-monospace {{ if eq $k $.PageIndex -}}active{{- end -}}"
+                                hx-target="#logs-detail-content-{{ $.HtmlId }}"
+                                hx-swap="outerHTML"
+                                hx-get="/logs/!/query?index={{ add $k }}&length={{$.PageLength }}&{{ $.Params }}"
+                        >{{ printf "%02d" (add $k 1) }}</button>
+                    </li>
+            {{ end }}
+            <li class="page-item d-none d-sm-block  {{if eq $.PageIndex (sub $.PageSize 1) }}disabled{{ end }}">
+                <button class="page-link"
+                        hx-target="#logs-detail-content-{{ $.HtmlId }}"
+                        hx-swap="outerHTML"
+                        hx-get="/logs/!/query?index={{ add $.PageIndex 1 }}&length={{$.PageLength }}&{{ $.Params }}"
+                ><i class="fa-solid fa-forward"></i>
+                </button>
+            </li>
+            <li class="page-item {{if eq $.PageIndex (sub $.PageSize 1) }}disabled{{ end }}">
+                <button class="page-link"
+                        hx-target="#logs-detail-content-{{ $.HtmlId }}"
+                        hx-swap="outerHTML"
+                        hx-get="/logs/!/query?index={{ sub $.PageSize 1 }}&length={{$.PageLength }}&{{ $.Params }}"
+                ><i class="fa-solid fa-forward-fast"></i>
+                </button>
+            </li>
+        </ul>
+    </nav>
+</div>

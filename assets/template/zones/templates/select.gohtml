@@ -1,0 +1,7 @@
+{{- if .Data.Zones -}}
+{{- if .Data.Select -}}
+{{- .Data.Select -}}
+{{- else }}
+{{- index  .Data.Zones 0 -}}
+{{- end -}}
+{{- end -}}

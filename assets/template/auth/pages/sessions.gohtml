@@ -1,0 +1,46 @@
+{{ include "common/header" . }}
+<div class="overflow-x-auto">
+    <table class="table text-center text-nowrap" style="min-width: 400px">
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">名称</th>
+            <th scope="col">最后操作时间</th>
+            <th scope="col">IP 地址</th>
+            <th scope="col">客户端</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{ range  $i,$v :=  .Data.Data }}
+            <tr class="{{- if .Self }}table-active{{ end }}">
+            <th scope="row">
+            {{ if eq .Type "web" }}
+                <i class="fa-brands fa-firefox"></i><span class="font-monospace">&nbsp;网页端</span>
+            {{ else }}
+                <i class="fa-solid fa-robot"></i><span class="font-monospace">&nbsp;客户端</span>
+            {{ end }}
+            </th>
+            <td><span class="font-monospace">{{ .Name }}{{- if .Self }}(<code>当前会话</code>){{ end }}</span></td>
+            <td><span class="font-monospace">{{ .Last | date "2006/01/02 15:04:05" }}</span></td>
+            <td><code>{{ .IP }}</code></td>
+            <td class="text-start">
+                <span class="font-monospace">
+                    {{- if eq .UA.Name "Chrome" }}
+                        <i class="fa-brands fa-chrome"></i>
+                    {{- end -}}
+                    {{- if eq .UA.Name "Firefox" }}
+                        <i class="fa-brands fa-firefox"></i>
+                    {{- end -}}
+                    {{- if eq .UA.Name "Edge" }}
+                        <i class="fa-brands fa-edge"></i>
+                    {{- end -}}
+                    {{- if eq .UA.Name "Safari" }}
+                        <i class="fa-brands fa-safari"></i>
+                    {{- end -}}
+                    &nbsp;{{- .UA.Name -}}&nbsp{{.UA.OS }}&nbsp;{{ .UA.OSVersion -}}
+                </span></td>
+        </tr>
+        {{ end }}
+        </tbody>
+    </table>
+</div>

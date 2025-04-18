@@ -1,0 +1,66 @@
+{{ include "common/header" . }}
+<div class="group" x-data="
+{
+  begin: '',
+  end:'',
+  group: '',
+  account: '',
+  ip:'',
+  msg:''
+}" x-init="
+begin   = getOrSetUrlParam('begin'  ,'{{ .Data.Begin }}')
+end     = getOrSetUrlParam('end'    ,'{{ .Data.End }}')
+group   = getOrSetUrlParam('group'  ,'')
+account = getOrSetUrlParam('account','')
+ip      = getOrSetUrlParam('ip'     ,'')
+msg     = getOrSetUrlParam('msg'    ,'')
+">
+    <div class="row m-0">
+        <div class="col-md-6 mb-1">
+            <label for="time-begin" class="form-label">开始时间</label>
+            <input id="time-begin" x-model="begin" type="datetime-local" class="form-control">
+        </div>
+        <div class="col-md-6 mb-1 ">
+            <label for="time-end" class="form-label">结束时间</label>
+            <input id="time-end" x-model="end" type="datetime-local" class="form-control">
+        </div>
+        <div class="col-md-3 mb-1">
+            <label for="group" class="form-label">分组</label>
+            <input id="group" type="text" x-model="group" class="form-control">
+        </div>
+        <div class="col-md-3 mb-1">
+            <label for="author" class="form-label">角色</label>
+            <input id="author" type="text" x-model="account" class="form-control">
+        </div>
+        <div class="col-md-3 mb-1">
+            <label for="ip-addr" class="form-label">IP地址</label>
+            <input id="ip-addr" type="text" x-model="ip" class="form-control">
+        </div>
+        <div class="col-md-3 mb-1">
+            <label for="msg" class="form-label">关键字</label>
+            <input id="msg" type="text" x-model="msg" class="form-control">
+        </div>
+        <div class="col-md-12 mt-1">
+            <button class="btn w-100 btn-info" x-on:click="
+htmx.process(document.querySelector('#detail-items'));
+updateLocation('begin'  ,begin  );
+updateLocation('end'    ,end    );
+updateLocation('group'  ,group  );
+updateLocation('account',account);
+updateLocation('ip'     ,ip     );
+updateLocation('msg'    ,msg    );
+">查询
+            </button>
+        </div>
+    </div>
+    <div class="logs-content m-2" id="detail-items"
+         x-bind:hx-get="'/logs/!/query?index=0&length=20'+
+     '&group='+ group +
+     '&begin='+ begin +
+     '&end='+ end +
+     '&account='+account +
+     '&ip=' + ip +
+     '&msg=' + msg "
+         hx-trigger="load">
+    </div>
+</div>

@@ -1,0 +1,36 @@
+<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid align-items-center">
+        <a class="navbar-brand" href="/">DNS 控制台</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
+                aria-controls="navbarText" >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse " id="navbarText">
+            <ul class="navbar-nav me-auto mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {{ if hasPrefix "/zones" $.Path }}active{{ end }}" aria-current="page"
+                       href="/zones">区域管理</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link  {{ if hasPrefix "/clients" $.Path }}active{{ end }}"
+                       href="/clients">客户端管理</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ if hasPrefix "/logs" $.Path }}active{{ end }}" href="/logs">审计日志</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ if hasPrefix "/sessions" $.Path }}active{{ end }}" href="/sessions">会话概览</a>
+                </li>
+            </ul>
+            <a href="/logout">
+                <button class="btn btn-outline-success me-2" type="button">注销</button>
+            </a>
+        </div>
+    </div>
+</nav>
+<div id="dialog-content"></div>
+<style>
+    body {
+        padding-top: 4.5rem;
+    }
+</style>

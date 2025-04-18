@@ -1,0 +1,182 @@
+<div class="tab-group" x-data="{tab: getUrlParam('tab','token')}">
+    <nav class="overflow-x-auto">
+        <div class="nav nav-tabs flex-nowrap">
+            <button class="nav-link text-nowrap"
+                    :class="{'active show': tab === 'token' }"
+                    x-on:click="updateLocation('tab','token');tab = 'token'">Token 管理
+            </button>
+            <button class="nav-link text-nowrap"
+                    :class="{'active show': tab === 'allow-ip' }"
+                    x-on:click="updateLocation('tab','allow-ip');tab = 'allow-ip'">IP 白名单管理
+            </button>
+            <button class="nav-link text-nowrap"
+                    :class="{'active show': tab === 'rules' }"
+                    x-on:click="updateLocation('tab','rules');tab = 'rules'">
+                策略管理
+            </button>
+            <button class="nav-link text-nowrap"
+                    :class="{'active show': tab === 'log' }"
+                    x-on:click="updateLocation('tab','log');tab = 'log'">
+                操作日志
+            </button>
+            <button class="nav-link text-nowrap"
+                    :class="{'active show': tab === 'api' }"
+                    x-on:click="updateLocation('tab','api');tab = 'api'">
+                调用日志
+            </button>
+        </div>
+    </nav>
+    <div class="tab-content" id="nav-tabContent">
+        <div class="tab-pane fade p-2" :class="{ 'active show': tab === 'token' }" role="tabpanel"
+             aria-labelledby="nav-home-tab"
+             tabindex="0">
+            <p class="text-info mb-1">点击重置按钮来生成新的 Token
+                <span class="text-warning">(只会展示一次)</span></p>
+
+            <div class="input-group mb-3">
+                <input type="password" id="reset-token-input" class="form-control"
+                       value="AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"
+                       autocomplete="off" disabled
+                       aria-label="客户端 Token"
+                       aria-describedby="button-reset-token">
+                <button class="btn btn-secondary btn-warning"
+                        hx-target="#dialog-content"
+                        hx-get="/clients/!/clients/{{ $.Name }}/resetToken"
+                        type="button" id="button-reset-token">重置
+                </button>
+            </div>
+            <div class="status">
+                {{ if .Client.Status }}
+                    <p>最后请求于<code>{{ .Client.Status.At | date "2006/01/02 15:04:05"}}</code>
+                        , 来自 <code>{{ .Client.Status.IP }}</code></p>
+                {{ else }}
+                    <p>没有任何使用记录</p>
+                {{ end }}
+            </div>
+        </div>
+        <div class="tab-pane fade p-2" :class="{ 'active show': tab === 'allow-ip' }" role="tabpanel"
+             aria-labelledby="nav-profile-tab" tabindex="0" x-data="{
+              ipMode: 'IPv4'
+             }">
+            <p class="text-info mb-1">请填入允许的 <code>IPv4</code> 或 <code>IPv6</code> 地址, 不支持 <code>CIDR</code>
+            </p>
+            <form method="post" action="/clients/{{ .Name }}/allow-ip" class="input-group mb-3">
+                <select class="form-select-sm" x-model="ipMode" aria-label="选择 IP 类型">
+                    <option value="IPv4">IPv4</option>
+                    <option value="IPv6">IPv6</option>
+                </select>
+                <template x-if="ipMode === 'IPv4'">
+                    <input type="text" name="ip" class="form-control" placeholder="请填写符合 RFC 791 的 IPv4 地址"
+                           pattern="{{ .Regex.Ipv4 }}"
+                           aria-label="IPv4 地址" aria-describedby="button-add" required>
+                </template>
+                <template x-if="ipMode === 'IPv6'">
+                    <input type="text" name="ip" class="form-control" placeholder="请填写符合 RFC 2460 的 IPv6 地址"
+                           pattern="{{ .Regex.Ipv6 }}"
+                           aria-label="IPv6 地址" aria-describedby="button-add" required>
+                </template>
+                <button class="btn btn-outline-secondary" type="submit" id="button-add">提交</button>
+            </form>
+            {{ if .Client.AllowedIPs  }}
+                <p>当前白名单 IP 列表：</p>
+            {{ else }}
+                <p class="text-center text-warning">当前未配置白名单 IP，将允许任意 IP 调用</p>
+            {{ end }}
+            <div class="d-flex row flex-wrap ms-1 me-1">
+                {{- range $i,$v := .Client.AllowedIPs }}
+                    <div class="w-auto mw-100 p-1 col-md-4 list-group">
+                        <div class="align-items-center justify-content-between p-3 d-flex list-group-item">
+                            <p class="m-0">{{ $v }}</p>
+                            <button class="ms-2 btn btn-sm text-danger"
+                                    hx-target="#dialog-content"
+                                    hx-delete="/clients/!/clients/{{ $.Name }}/allow-ip/{{ $v }}"
+                            ><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                {{- end }}
+            </div>
+        </div>
+        <div class="tab-pane fade p-2" :class="{ 'active show': tab === 'rules' }" role="tabpanel"
+             aria-labelledby="nav-contact-tab" tabindex="0">
+            <div class="row">
+                <button class="btn btn-info col-md-12 mb-2 "
+                        hx-target="#dialog-content"
+                        hx-get="/clients/!/clients/{{ $.Name }}/rules">新增策略
+                </button>
+                {{ if .Client.Rules  }}
+                {{ else }}
+                    <p class="text-center text-warning">当前未配置任何策略</p>
+                {{ end }}
+                {{- range $k,$v := .Client.Rules }}
+                    <div class="col-md-6 p-1 mt-1">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between">
+                                <p class="h5 m-0">{{ $k }}</p>
+                                <div class="right">
+                                    <button class="btn btn-sm text-info"
+                                            hx-target="#dialog-content"
+                                            hx-get="/clients/!/clients/{{ $.Name }}/rules/{{ $k }}/verify">
+                                        <i class="fa-solid fa-vial-virus"></i></button>
+                                    <button class="btn btn-sm text-warning"
+                                            hx-target="#dialog-content"
+                                            hx-get="/clients/!/clients/{{ $.Name }}/rules/{{ $k }}"><i
+                                                class="fa-regular fa-pen-to-square"></i></button>
+                                    <button class="btn btn-sm text-danger"
+                                            hx-target="#dialog-content"
+                                            hx-delete="/clients/!/clients/{{ $.Name }}/rules/{{ $k }}"><i
+                                                class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-body p-1">
+                                <table class="table table-borderless text-center m-0 p-0">
+                                    <tbody>
+                                    <tr>
+                                        <td class="col-3 text-end">规则</td>
+                                        <td class="text-start"><code class="text-warning">^</code><code>{{ $v.Host }}</code><code class="text-warning">$</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="col-3 text-end">类型</td>
+                                        <td class="text-start">
+                                            {{- if eq $v.Record "*" -}}
+                                                所有(<code>*</code>)
+                                            {{- else -}}
+                                                <code>{{ $v.Record }}</code>
+                                            {{- end -}}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="col-3 text-end">权限</td>
+                                        <td class="text-start">
+                                            {{- if eq  $v.Permission "ro" }}
+                                                只读 (<code>r</code>)
+                                            {{- end }}
+                                            {{- if eq  $v.Permission "ru" }}
+                                                读写 (<code>c/r/u</code>)
+                                            {{- end }}
+                                            {{- if eq  $v.Permission "rw" }}
+                                                读写 (<code>c/r/u/d</code>)
+                                            {{- end }}
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {{- end }}
+            </div>
+        </div>
+        <div class="tab-pane fade pt-2" :class="{ 'active show': tab === 'log' }" role="tabpanel"
+             aria-labelledby="nav-contact-tab"
+              hx-get="/logs/!/query?group=clients/{{ $.Name }}/*&length=18" hx-trigger="load">
+        </div>
+        <div class="tab-pane fade pt-2" :class="{ 'active show': tab === 'api' }" role="tabpanel"
+             aria-labelledby="nav-contact-tab">
+            <p class="text-info text-end"><span class="text-warning">注意：</span>客户端查询请求不会记录</p>
+            <div class="body"
+                 hx-get="/logs/!/query?account=client({{ $.Name }})&length=18" hx-trigger="load">
+            </div>
+        </div>
+
+    </div>
+</div>

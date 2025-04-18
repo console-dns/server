@@ -1,0 +1,14 @@
+{{- if eq .Mode "create" -}}
+0
+{{- else -}}
+{{- $child := index .Record .Type -}}
+{{- if eq $.Type "CAA" -}}
+0
+{{- else -}}
+{{- if eq $.Type "SOA" -}}
+{{- $child.Ttl -}}
+{{- else -}}
+{{- (index $child $.Index ).Ttl -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

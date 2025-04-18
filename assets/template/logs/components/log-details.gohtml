@@ -1,0 +1,45 @@
+{{ if eq $.Count 0 }}
+    <p class="text-warning text-center">未查询到符合条件的审计日志</p>
+{{ else }}
+<div class="logs-detail-content" id="logs-detail-content-{{ $.HtmlId }}">
+    <div class="table-group table-responsive w-100">
+        <table class="table">
+            <thead>
+            <tr class="text-center text-nowrap">
+                <th scope="col" class="col-2">时间</th>
+                <th scope="col" class="col-2">角色</th>
+                <th scope="col" class="col-2">IP地址</th>
+                <th scope="col" class="col-6" >操作内容</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{- range $i,$v := .Data }}
+                {{ $account := $v.Author }}
+                <tr class="text-center text-nowrap">
+                    <td>{{ $v.CreatedAt | date "06/01/02 15:04:05" }}</td>
+                    <td>
+                        {{- if eq $account.Type "user" }}
+                            <code>web::{{$account.Name}}</code>
+                        {{- end  }}
+                        {{- if eq $account.Type "client" }}
+                            <code>api::{{$account.Name}}</code>
+                        {{- end  }}
+                        {{- if eq $account.Type "system" }}
+                            <code>system</code>
+                        {{- end  }}
+
+                    </td>
+                    <td><code>{{ $v.Ip }}</code></td>
+                    <td class="text-start">{{ $v.Msg }}</td>
+                </tr>
+            {{- end }}
+
+            </tbody>
+        </table>
+    </div>
+<div class="footer mt-2">
+    {{ include "logs/templates/page-controller" $ }}
+    <p class="text-end w-100">共查询到 <code>{{ $.Count }}</code> 条数据</p>
+</div>
+</div>
+{{ end }}
