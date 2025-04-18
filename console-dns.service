@@ -1,0 +1,16 @@
+[Unit]
+After=network.target
+Description=Console DNS
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/console-dns server -c /etc/console-dns/server.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=10
+SuccessExitStatus=0
+LimitNOFILE=1048576
+LimitNPROC=512
+
+[Install]
+WantedBy=multi-user.target
