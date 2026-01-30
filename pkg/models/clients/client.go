@@ -67,19 +67,41 @@ func (c *Clients) GetClientStatus() []*ClientStatusResult {
 }
 
 func FromClients(ctx context.Context, storage kv.KV) (*Clients, error) {
+	cStorage := storage.Child("clients")
 	result := &Clients{
 		storage: storage,
 		Clients: make(map[string]*Client),
 	}
-	err := utils.AutoKVUnmarshal(ctx, storage, "clients.json", result)
+	list, err := cStorage.List(ctx, "")
 	if err != nil {
-		return nil, errors.Wrapf(err, "解析 client 失败")
+		return nil, err
+	}
+	for key := range list {
+		parts := regexp.MustCompile(`/`).Split(key, 2)
+		if len(parts) > 0 {
+			clientName := parts[0]
+			if _, ok := result.Clients[clientName]; !ok {
+				client := &Client{}
+				err := utils.AutoKVUnmarshal(ctx, cStorage, clientName, client)
+				if err != nil {
+					return nil, err
+				}
+				result.Clients[clientName] = client
+			}
+		}
 	}
 	return result, nil
 }
 
 func (c *Clients) Flush(ctx context.Context) error {
-	return utils.AutoKVMarshal(ctx, c.storage, "clients.json", c)
+	cStorage := c.storage.Child("clients")
+	for name, client := range c.Clients {
+		err := utils.AutoKVMarshal(ctx, cStorage, name, client)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type Client struct {

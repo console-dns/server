@@ -1,6 +1,7 @@
 package zones
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/console-dns/server/pkg/utils"
 	"github.com/pkg/errors"
+	"gopkg.d7z.net/middleware/kv"
 )
 
 func parseTtl(ttl string) (uint32, error) {
@@ -707,6 +709,32 @@ func NewRecord() *Record {
 	}
 }
 
+func (r *Record) Save(ctx context.Context, storage kv.KV) error {
+	_ = utils.AutoKVMarshal(ctx, storage, "A", r.A)
+	_ = utils.AutoKVMarshal(ctx, storage, "AAAA", r.AAAA)
+	_ = utils.AutoKVMarshal(ctx, storage, "TXT", r.TXT)
+	_ = utils.AutoKVMarshal(ctx, storage, "CNAME", r.CNAME)
+	_ = utils.AutoKVMarshal(ctx, storage, "NS", r.NS)
+	_ = utils.AutoKVMarshal(ctx, storage, "MX", r.MX)
+	_ = utils.AutoKVMarshal(ctx, storage, "SRV", r.SRV)
+	_ = utils.AutoKVMarshal(ctx, storage, "CAA", r.CAA)
+	_ = utils.AutoKVMarshal(ctx, storage, "SOA", r.SOA)
+	return nil
+}
+
+func (r *Record) Load(ctx context.Context, storage kv.KV) error {
+	_ = utils.AutoKVUnmarshal(ctx, storage, "A", &r.A)
+	_ = utils.AutoKVUnmarshal(ctx, storage, "AAAA", &r.AAAA)
+	_ = utils.AutoKVUnmarshal(ctx, storage, "TXT", &r.TXT)
+	_ = utils.AutoKVUnmarshal(ctx, storage, "CNAME", &r.CNAME)
+	_ = utils.AutoKVUnmarshal(ctx, storage, "NS", &r.NS)
+	_ = utils.AutoKVUnmarshal(ctx, storage, "MX", &r.MX)
+	_ = utils.AutoKVUnmarshal(ctx, storage, "SRV", &r.SRV)
+	_ = utils.AutoKVUnmarshal(ctx, storage, "CAA", &r.CAA)
+	_ = utils.AutoKVUnmarshal(ctx, storage, "SOA", &r.SOA)
+	return nil
+}
+
 func (r *Record) ModA(old, new *A) error {
 	if old == nil {
 		r.A = append(r.A, new)
@@ -930,6 +958,39 @@ func (z *Zone) ModRecord(name string, f func(r *Record) error) error {
 	}
 	if r.IsEmpty() {
 		delete(z.Records, name)
+	}
+	return nil
+}
+
+func (z *Zone) Save(ctx context.Context, storage kv.KV) error {
+	for name, record := range z.Records {
+		err := record.Save(ctx, storage.Child(name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (z *Zone) Load(ctx context.Context, storage kv.KV) error {
+	list, err := storage.List(ctx, "")
+	if err != nil {
+		return err
+	}
+	for key := range list {
+		// key is like "recordName/A"
+		parts := regexp.MustCompile(`/`).Split(key, 2)
+		if len(parts) > 0 {
+			recordName := parts[0]
+			if _, ok := z.Records[recordName]; !ok {
+				record := NewRecord()
+				err := record.Load(ctx, storage.Child(recordName))
+				if err != nil {
+					return err
+				}
+				z.Records[recordName] = record
+			}
+		}
 	}
 	return nil
 }

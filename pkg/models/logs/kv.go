@@ -16,14 +16,14 @@ type KVLog struct {
 
 func NewKVLog(storage kv.KV) *KVLog {
 	return &KVLog{
-		storage: storage,
+		storage: storage.Child("logs"),
 	}
 }
 
 func (a *KVLog) Query(page *QueryPage, filters ...Filter) (*QueryResult, error) {
 	ctx := context.Background()
 	// List all logs. This might be slow if there are many logs.
-	list, err := a.storage.List(ctx, "logs/")
+	list, err := a.storage.List(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (a *KVLog) Append(meta ...*Meta) error {
 	}
 	ctx := context.Background()
 	for _, m := range meta {
-		key := fmt.Sprintf("logs/%020d_%08x", m.CreatedAt.UnixNano(), rand.Uint32())
+		key := fmt.Sprintf("%020d_%08x", m.CreatedAt.UnixNano(), rand.Uint32())
 		err := a.storage.Put(ctx, key, m.String(), kv.TTLKeep)
 		if err != nil {
 			return err

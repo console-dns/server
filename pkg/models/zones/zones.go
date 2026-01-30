@@ -2,8 +2,8 @@ package zones
 
 import (
 	"context"
+	"regexp"
 
-	"github.com/console-dns/server/pkg/utils"
 	"gopkg.d7z.net/middleware/kv"
 )
 
@@ -13,11 +13,27 @@ type Zones struct {
 }
 
 func FromZones(ctx context.Context, storage kv.KV) (*Zones, error) {
+	zStorage := storage.Child("zones")
 	data := NewZones()
-	err := utils.AutoKVUnmarshal(ctx, storage, "zones.json", data)
+	list, err := zStorage.List(ctx, "")
 	if err != nil {
 		return nil, err
 	}
+	for key := range list {
+		parts := regexp.MustCompile(`/`).Split(key, 2)
+		if len(parts) > 0 {
+			zoneName := parts[0]
+			if _, ok := data.Data[zoneName]; !ok {
+				zone := NewZone()
+				err := zone.Load(ctx, zStorage.Child(zoneName))
+				if err != nil {
+					return nil, err
+				}
+				data.Data[zoneName] = zone
+			}
+		}
+	}
+
 	return &Zones{
 		storage:  storage,
 		ZoneData: data,
@@ -25,7 +41,14 @@ func FromZones(ctx context.Context, storage kv.KV) (*Zones, error) {
 }
 
 func (z *Zones) Flush(ctx context.Context) error {
-	return utils.AutoKVMarshal(ctx, z.storage, "zones.json", z.ZoneData)
+	zStorage := z.storage.Child("zones")
+	for name, zone := range z.Data {
+		err := zone.Save(ctx, zStorage.Child(name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (z *Zones) ListZones() []string {

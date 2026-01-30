@@ -30,16 +30,17 @@ type Session struct {
 }
 
 func FromSession(ctx context.Context, config *settings.StaticConfig, storage kv.KV) (*Session, error) {
+	sStorage := storage.Child("auth")
 	result := &Session{
 		storage:   storage,
 		Sessions:  make(map[string]*SessionState),
 		DenyIPs:   make(map[string]*DenyIpState),
 		HackerIPs: make(map[string]*HackerIpState),
 	}
-	err := utils.AutoKVUnmarshal(ctx, storage, "sessions.json", result)
-	if err != nil {
-		return nil, errors.Wrap(err, "session 配置解析失败")
-	}
+	_ = utils.AutoKVUnmarshal(ctx, sStorage, "sessions", &result.Sessions)
+	_ = utils.AutoKVUnmarshal(ctx, sStorage, "deny_ips", &result.DenyIPs)
+	_ = utils.AutoKVUnmarshal(ctx, sStorage, "hacker_ips", &result.HackerIPs)
+
 	result.sessionTtl = config.Auth.SessionTTL
 	result.ipTtl = config.Auth.DenyTTL
 	result.hackerCount = config.Auth.HackerCount
@@ -112,7 +113,11 @@ func (s *Session) Refresh() error {
 }
 
 func (s *Session) Flush(ctx context.Context) error {
-	return utils.AutoKVMarshal(ctx, s.storage, "sessions.json", s)
+	sStorage := s.storage.Child("auth")
+	_ = utils.AutoKVMarshal(ctx, sStorage, "sessions", s.Sessions)
+	_ = utils.AutoKVMarshal(ctx, sStorage, "deny_ips", s.DenyIPs)
+	_ = utils.AutoKVMarshal(ctx, sStorage, "hacker_ips", s.HackerIPs)
+	return nil
 }
 
 func (s *Session) AddDenyIp(ip string) {
