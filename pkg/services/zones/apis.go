@@ -5,20 +5,7 @@ import (
 	zones_model "github.com/console-dns/server/pkg/models/zones"
 	"github.com/console-dns/server/pkg/utils"
 	"github.com/console-dns/server/pkg/utils/route"
-	"github.com/pkg/errors"
 )
-
-var recordTypes = []string{
-	"A",
-	"AAAA",
-	"TXT",
-	"CNAME",
-	"NS",
-	"MX",
-	"SRV",
-	"CAA",
-	"SOA",
-}
 
 func ApiListZones(ctx *route.ApiRequest) (any, error) {
 	zones, zUnlock := ctx.Content.SyncZones.WithReadOnly()
@@ -30,9 +17,9 @@ func ApiListZones(ctx *route.ApiRequest) (any, error) {
 
 	for zoneName, zone := range zones.ListRecords() {
 		for recordName, record := range zone {
-			for _, dnsType := range recordTypes {
+			for _, dnsType := range zones_model.RecordTypes {
 				if client.VerifyRule(zoneName, recordName, dnsType).CanRead() {
-					r := record // record is zones_model.Record
+					r := record
 					result.CopyFrom(&r, zoneName, recordName, dnsType)
 				}
 			}
@@ -57,10 +44,9 @@ func ApiListZone(ctx *route.ApiRequest) (any, error) {
 		return nil, self_errors.NotfoundErrorf("区域不存在")
 	}
 	for recordName, record := range zones.GetRecords(zone) {
-		for _, dnsType := range recordTypes {
+		for _, dnsType := range zones_model.RecordTypes {
 			if token.VerifyRule(zone, recordName, dnsType).CanRead() {
-				r := record // record is *zones_model.Record
-				result.CopyFrom(r, zone, recordName, dnsType)
+				result.CopyFrom(record, zone, recordName, dnsType)
 			}
 		}
 	}
@@ -156,67 +142,9 @@ func DeleteRecord(ctx *route.ApiRequest) (any, error) {
 		r = zones_model.NewRecord()
 		z.Records[data.record] = r
 	}
-	getValue := func(s string) string {
+	err = removeRecord(r, data.dnsType, func(s string) string {
 		return data.items[s]
-	}
-	switch data.dnsType {
-	case "A":
-		if data, e := zones_model.FromRecordA(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveA(data)
-		}
-	case "AAAA":
-		if data, e := zones_model.FromRecordAAAA(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveAAAA(data)
-		}
-	case "TXT":
-		if data, e := zones_model.FromRecordTXT(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveTXT(data)
-		}
-	case "CNAME":
-		if data, e := zones_model.FromRecordCNAME(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveCNAME(data)
-		}
-	case "NS":
-		if data, e := zones_model.FromRecordNS(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveNS(data)
-		}
-	case "MX":
-		if data, e := zones_model.FromRecordMX(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveMX(data)
-		}
-	case "SRV":
-		if data, e := zones_model.FromRecordSRV(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveSRV(data)
-		}
-	case "CAA":
-		if data, e := zones_model.FromRecordCAA(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveCAA(data)
-		}
-	case "SOA":
-		if data, e := zones_model.FromRecordSOA(getValue); e != nil {
-			return nil, e
-		} else {
-			err = r.RemoveSOA(data)
-		}
-	default:
-		err = errors.New("未知类型")
-	}
+	})
 	if err != nil {
 		return nil, self_errors.BadRequestErrorf("内容删除错误: %s", err.Error())
 	}

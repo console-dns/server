@@ -5,7 +5,6 @@ import (
 
 	zones_model "github.com/console-dns/server/pkg/models/zones"
 	"github.com/console-dns/server/pkg/utils"
-	"github.com/pkg/errors"
 
 	self_errors "github.com/console-dns/server/pkg/errors"
 	"github.com/console-dns/server/pkg/utils/route"
@@ -91,28 +90,7 @@ func ZoneRecordDel(ctx *route.WebRequest) error {
 		return self_errors.BadRequestErrorf("删除失败，区域不存在")
 	}
 	if err = zoneCfg.ModRecord(dnsName, func(r *zones_model.Record) error {
-		switch recordType {
-		case "A":
-			return r.RemoveA(r.A[index])
-		case "AAAA":
-			return r.RemoveAAAA(r.AAAA[index])
-		case "TXT":
-			return r.RemoveTXT(r.TXT[index])
-		case "CNAME":
-			return r.RemoveCNAME(r.CNAME[index])
-		case "NS":
-			return r.RemoveNS(r.NS[index])
-		case "MX":
-			return r.RemoveMX(r.MX[index])
-		case "SRV":
-			return r.RemoveSRV(r.SRV[index])
-		case "CAA":
-			return r.RemoveCAA(r.CAA[index])
-		case "SOA":
-			return r.RemoveSOA(r.SOA)
-		default:
-			return errors.New("未知类型")
-		}
+		return r.RemoveRecord(recordType, index)
 	}); err != nil {
 		return self_errors.BadRequestErrorf("删除失败， %s", err.Error())
 	}

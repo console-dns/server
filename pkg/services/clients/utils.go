@@ -21,29 +21,21 @@ func tryClient(ctx *route.WebRequest, rw bool) (*ClientStatus, error) {
 	if client == "" {
 		return nil, errors.New("客户端名称格式错误")
 	}
+	var cfg *clients.Clients
+	var f func()
 	if rw {
-		cfg, f := ctx.Content.SyncTokens.WithReadWrite()
-		if cfg.Get(client) == nil {
-			defer f()
-			return nil, errors.New("客户端不存在")
-		} else {
-			return &ClientStatus{
-				Name:   client,
-				Client: cfg.Get(client),
-				close:  f,
-			}, nil
-		}
+		cfg, f = ctx.Content.SyncTokens.WithReadWrite()
 	} else {
-		cfg, f := ctx.Content.SyncTokens.WithReadOnly()
-		if cfg.Get(client) == nil {
-			defer f()
-			return nil, errors.New("客户端不存在")
-		} else {
-			return &ClientStatus{
-				Name:   client,
-				Client: cfg.Get(client),
-				close:  f,
-			}, nil
-		}
+		cfg, f = ctx.Content.SyncTokens.WithReadOnly()
 	}
+	c := cfg.Get(client)
+	if c == nil {
+		f()
+		return nil, errors.New("客户端不存在")
+	}
+	return &ClientStatus{
+		Name:   client,
+		Client: c,
+		close:  f,
+	}, nil
 }

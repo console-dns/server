@@ -37,17 +37,11 @@ func atoUint32(src string) (uint32, error) {
 }
 
 func validateHost(host string) error {
-	if !regexp.MustCompile(string(utils.RegexHost)).MatchString(host) {
-		return errors.New("域名格式错误")
-	}
-	return nil
+	return utils.RegexHost.Valid(host)
 }
 
 func validateMail(mail string) error {
-	if !regexp.MustCompile(string(utils.RegexMail)).MatchString(mail) {
-		return errors.New("邮件格式错误")
-	}
-	return nil
+	return utils.RegexMail.Valid(mail)
 }
 
 type Validator interface {
@@ -1090,6 +1084,57 @@ func (z *ZoneData) RemoveZone(name string) error {
 	}
 	delete(z.Data, name)
 	return nil
+}
+
+func (r *Record) RemoveRecord(dnsType string, index int) error {
+	switch dnsType {
+	case "A":
+		if index >= 0 && index < len(r.A) {
+			r.A = append(r.A[:index], r.A[index+1:]...)
+			return nil
+		}
+	case "AAAA":
+		if index >= 0 && index < len(r.AAAA) {
+			r.AAAA = append(r.AAAA[:index], r.AAAA[index+1:]...)
+			return nil
+		}
+	case "TXT":
+		if index >= 0 && index < len(r.TXT) {
+			r.TXT = append(r.TXT[:index], r.TXT[index+1:]...)
+			return nil
+		}
+	case "CNAME":
+		if index >= 0 && index < len(r.CNAME) {
+			r.CNAME = append(r.CNAME[:index], r.CNAME[index+1:]...)
+			return nil
+		}
+	case "NS":
+		if index >= 0 && index < len(r.NS) {
+			r.NS = append(r.NS[:index], r.NS[index+1:]...)
+			return nil
+		}
+	case "MX":
+		if index >= 0 && index < len(r.MX) {
+			r.MX = append(r.MX[:index], r.MX[index+1:]...)
+			return nil
+		}
+	case "SRV":
+		if index >= 0 && index < len(r.SRV) {
+			r.SRV = append(r.SRV[:index], r.SRV[index+1:]...)
+			return nil
+		}
+	case "CAA":
+		if index >= 0 && index < len(r.CAA) {
+			r.CAA = append(r.CAA[:index], r.CAA[index+1:]...)
+			return nil
+		}
+	case "SOA":
+		r.SOA = nil
+		return nil
+	default:
+		return fmt.Errorf("unknown dns type: %s", dnsType)
+	}
+	return errors.New("record index out of range")
 }
 
 func (r *Record) IsEmpty() bool {

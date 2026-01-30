@@ -15,41 +15,47 @@ import (
 func AutoMarshal(filePath string, result any) error {
 	var data []byte
 	var err error
-	if strings.HasSuffix(filePath, ".json") {
+	ext := strings.ToLower(filePath[strings.LastIndex(filePath, "."):])
+	switch ext {
+	case ".json":
 		data, err = json.Marshal(result)
-	} else if strings.HasSuffix(filePath, ".yml") || strings.HasSuffix(filePath, ".yaml") {
+	case ".yml", ".yaml":
 		data, err = yaml.Marshal(result)
-	} else if strings.HasSuffix(filePath, ".toml") {
+	case ".toml":
 		data, err = toml.Marshal(result)
+	default:
+		return errors.New("未知文件类型 : " + filePath)
 	}
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filePath, data, 0o644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(filePath, data, 0o644)
 }
 
 func AutoUnmarshal(filePath string, result any, generate bool) error {
 	data, err := os.ReadFile(filePath)
-	if err != nil && os.IsNotExist(err) && generate {
-		err := AutoMarshal(filePath, result)
-		if err != nil {
-			return errors.Wrap(err, "文件不存在，且创建失败")
+	if err != nil {
+		if os.IsNotExist(err) && generate {
+			if err := AutoMarshal(filePath, result); err != nil {
+				return errors.Wrap(err, "文件不存在，且创建失败")
+			}
+			data, err = os.ReadFile(filePath)
 		}
-	} else if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
-	if strings.HasSuffix(filePath, ".json") {
+	ext := strings.ToLower(filePath[strings.LastIndex(filePath, "."):])
+	switch ext {
+	case ".json":
 		return json.Unmarshal(data, result)
-	} else if strings.HasSuffix(filePath, ".yml") || strings.HasSuffix(filePath, ".yaml") {
+	case ".yml", ".yaml":
 		return yaml.Unmarshal(data, result)
-	} else if strings.HasSuffix(filePath, ".toml") {
+	case ".toml":
 		return toml.Unmarshal(data, result)
+	default:
+		return errors.New("未知文件类型 : " + filePath)
 	}
-	return errors.New("未知文件类型 : " + filePath)
 }
 
 func AutoKVMarshal(ctx context.Context, storage kv.KV, key string, result any) error {

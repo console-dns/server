@@ -35,26 +35,22 @@ func (c *WebRequest) WritePageTemplate(path string, args any) error {
 		Data:  args,
 		Path:  c.RequestURI,
 	}
-	var argMap map[string]any
-	if s, ok := args.(map[string]any); ok {
-		argMap = s
+	if argMap, ok := args.(map[string]any); ok {
+		if title, ok := argMap["Title"].(string); ok {
+			data.Title = title
+		}
 	} else if args != nil {
-		argMap = structs.Map(args)
-	}
-	if argMap["Title"] != nil {
-		if s, ok := argMap["Title"].(string); ok {
-			data.Title = s
+		argMap := structs.Map(args)
+		if title, ok := argMap["Title"].(string); ok {
+			data.Title = title
 		}
 	}
-	err := assets.WriteTemplate(c.W, "include/head", data)
-	if err != nil {
-		return err
+	for _, p := range []string{"include/head", path, "include/body"} {
+		if err := assets.WriteTemplate(c.W, p, data); err != nil {
+			return err
+		}
 	}
-	err = assets.WriteTemplate(c.W, path, data)
-	if err != nil {
-		return err
-	}
-	return assets.WriteTemplate(c.W, "include/body", data)
+	return nil
 }
 
 // WriteComponentTemplate 渲染模板内容

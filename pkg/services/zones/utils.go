@@ -28,31 +28,23 @@ func tryZone(ctx *route.WebRequest, rw bool) (*ZoneStatus, error) {
 	if err != nil {
 		return nil, self_errors.BadRequestErrorf("区域不存在")
 	}
+	var cfg *zones_model.Zones
+	var f func()
 	if rw {
-		cfg, f := ctx.Content.SyncZones.WithReadWrite()
-		if cfg.GetZone(zone) == nil {
-			defer f()
-			return nil, self_errors.BadRequestErrorf("区域不存在")
-		} else {
-			return &ZoneStatus{
-				Name:   zone,
-				Zone:   cfg.GetZone(zone),
-				_close: f,
-			}, nil
-		}
+		cfg, f = ctx.Content.SyncZones.WithReadWrite()
 	} else {
-		cfg, f := ctx.Content.SyncZones.WithReadOnly()
-		if cfg.GetZone(zone) == nil {
-			defer f()
-			return nil, self_errors.BadRequestErrorf("区域不存在")
-		} else {
-			return &ZoneStatus{
-				Name:   zone,
-				Zone:   cfg.GetZone(zone),
-				_close: f,
-			}, nil
-		}
+		cfg, f = ctx.Content.SyncZones.WithReadOnly()
 	}
+	z := cfg.GetZone(zone)
+	if z == nil {
+		f()
+		return nil, self_errors.BadRequestErrorf("区域不存在")
+	}
+	return &ZoneStatus{
+		Name:   zone,
+		Zone:   z,
+		_close: f,
+	}, nil
 }
 
 func getOrNil[V any](data []*V, index int) *V {
@@ -68,95 +60,68 @@ func getOrNil[V any](data []*V, index int) *V {
 func modRecord(r *zones_model.Record, dnsType string, oldData func(string) string, newData func(string) string) error {
 	switch dnsType {
 	case "A":
-		oRecord, err := zones_model.FromRecordA(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordA(oldData)
+		new, err2 := zones_model.FromRecordA(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		record, err := zones_model.FromRecordA(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModA(oRecord, record)
+		return r.ModA(old, new)
 	case "AAAA":
-		oRecord, err := zones_model.FromRecordAAAA(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordAAAA(oldData)
+		new, err2 := zones_model.FromRecordAAAA(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		record, err := zones_model.FromRecordAAAA(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModAAAA(oRecord, record)
+		return r.ModAAAA(old, new)
 	case "TXT":
-		oldRecord, err := zones_model.FromRecordTXT(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordTXT(oldData)
+		new, err2 := zones_model.FromRecordTXT(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		record, err := zones_model.FromRecordTXT(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModTXT(oldRecord, record)
+		return r.ModTXT(old, new)
 	case "CNAME":
-		oldRecord, err := zones_model.FromRecordCNAME(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordCNAME(oldData)
+		new, err2 := zones_model.FromRecordCNAME(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		record, err := zones_model.FromRecordCNAME(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModCNAME(oldRecord, record)
+		return r.ModCNAME(old, new)
 	case "NS":
-		oldRecord, err := zones_model.FromRecordNS(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordNS(oldData)
+		new, err2 := zones_model.FromRecordNS(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		record, err := zones_model.FromRecordNS(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModNS(oldRecord, record)
+		return r.ModNS(old, new)
 	case "MX":
-		oldRecord, err := zones_model.FromRecordMX(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordMX(oldData)
+		new, err2 := zones_model.FromRecordMX(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		record, err := zones_model.FromRecordMX(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModMX(oldRecord, record)
+		return r.ModMX(old, new)
 	case "SRV":
-		oldRecord, err := zones_model.FromRecordSRV(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordSRV(oldData)
+		new, err2 := zones_model.FromRecordSRV(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		record, err := zones_model.FromRecordSRV(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModSRV(oldRecord, record)
+		return r.ModSRV(old, new)
 	case "SOA":
-		oldSOA, err := zones_model.FromRecordSOA(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordSOA(oldData)
+		new, err2 := zones_model.FromRecordSOA(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		data, err := zones_model.FromRecordSOA(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModSOA(oldSOA, data)
+		return r.ModSOA(old, new)
 	case "CAA":
-		oldRecord, err := zones_model.FromRecordCAA(oldData)
-		if err != nil {
-			return err
+		old, err1 := zones_model.FromRecordCAA(oldData)
+		new, err2 := zones_model.FromRecordCAA(newData)
+		if err1 != nil || err2 != nil {
+			return utils.FirstError(err1, err2)
 		}
-		data, err := zones_model.FromRecordCAA(newData)
-		if err != nil {
-			return err
-		}
-		return r.ModCAA(oldRecord, data)
+		return r.ModCAA(old, new)
 	default:
 		return fmt.Errorf("未知类型")
 	}
@@ -165,63 +130,124 @@ func modRecord(r *zones_model.Record, dnsType string, oldData func(string) strin
 func modRecordWithIndex(r *zones_model.Record, dnsType string, oldIndex int, newData func(string) string) error {
 	switch dnsType {
 	case "A":
-		recordA, err := zones_model.FromRecordA(newData)
+		record, err := zones_model.FromRecordA(newData)
 		if err != nil {
 			return err
 		}
-		return r.ModA(getOrNil(r.A, oldIndex), recordA)
+		return r.ModA(getOrNil(r.A, oldIndex), record)
 	case "AAAA":
-		aaaa, err := zones_model.FromRecordAAAA(newData)
+		record, err := zones_model.FromRecordAAAA(newData)
 		if err != nil {
 			return err
 		}
-		return r.ModAAAA(getOrNil(r.AAAA, oldIndex), aaaa)
+		return r.ModAAAA(getOrNil(r.AAAA, oldIndex), record)
 	case "TXT":
-		txt, err := zones_model.FromRecordTXT(newData)
+		record, err := zones_model.FromRecordTXT(newData)
 		if err != nil {
 			return err
 		}
-		return r.ModTXT(getOrNil(r.TXT, oldIndex), txt)
+		return r.ModTXT(getOrNil(r.TXT, oldIndex), record)
 	case "CNAME":
-		data, err := zones_model.FromRecordCNAME(newData)
+		record, err := zones_model.FromRecordCNAME(newData)
 		if err != nil {
 			return err
 		}
-		return r.ModCNAME(getOrNil(r.CNAME, oldIndex), data)
+		return r.ModCNAME(getOrNil(r.CNAME, oldIndex), record)
 	case "NS":
-		data, err := zones_model.FromRecordNS(newData)
+		record, err := zones_model.FromRecordNS(newData)
 		if err != nil {
 			return err
 		}
-		return r.ModNS(getOrNil(r.NS, oldIndex), data)
+		return r.ModNS(getOrNil(r.NS, oldIndex), record)
 	case "MX":
-		data, err := zones_model.FromRecordMX(newData)
+		record, err := zones_model.FromRecordMX(newData)
 		if err != nil {
 			return err
 		}
-		return r.ModMX(getOrNil(r.MX, oldIndex), data)
+		return r.ModMX(getOrNil(r.MX, oldIndex), record)
 	case "SRV":
-		data, err := zones_model.FromRecordSRV(newData)
+		record, err := zones_model.FromRecordSRV(newData)
 		if err != nil {
 			return err
 		}
-		return r.ModSRV(getOrNil(r.SRV, oldIndex), data)
+		return r.ModSRV(getOrNil(r.SRV, oldIndex), record)
 	case "SOA":
-		data, err := zones_model.FromRecordSOA(newData)
+		record, err := zones_model.FromRecordSOA(newData)
 		if err != nil {
 			return err
 		}
+		old := r.SOA
 		if oldIndex == scanner.EOF {
-			return r.ModSOA(nil, data)
-		} else {
-			return r.ModSOA(r.SOA, data)
+			old = nil
 		}
+		return r.ModSOA(old, record)
 	case "CAA":
-		data, err := zones_model.FromRecordCAA(newData)
+		record, err := zones_model.FromRecordCAA(newData)
 		if err != nil {
 			return err
 		}
-		return r.ModCAA(getOrNil(r.CAA, oldIndex), data)
+		return r.ModCAA(getOrNil(r.CAA, oldIndex), record)
+	default:
+		return fmt.Errorf("未知类型")
+	}
+}
+
+func removeRecord(r *zones_model.Record, dnsType string, data func(string) string) error {
+	switch dnsType {
+	case "A":
+		it, err := zones_model.FromRecordA(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveA(it)
+	case "AAAA":
+		it, err := zones_model.FromRecordAAAA(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveAAAA(it)
+	case "TXT":
+		it, err := zones_model.FromRecordTXT(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveTXT(it)
+	case "CNAME":
+		it, err := zones_model.FromRecordCNAME(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveCNAME(it)
+	case "NS":
+		it, err := zones_model.FromRecordNS(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveNS(it)
+	case "MX":
+		it, err := zones_model.FromRecordMX(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveMX(it)
+	case "SRV":
+		it, err := zones_model.FromRecordSRV(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveSRV(it)
+	case "SOA":
+		it, err := zones_model.FromRecordSOA(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveSOA(it)
+	case "CAA":
+		it, err := zones_model.FromRecordCAA(data)
+		if err != nil {
+			return err
+		}
+		return r.RemoveCAA(it)
 	default:
 		return fmt.Errorf("未知类型")
 	}

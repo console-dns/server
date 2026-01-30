@@ -93,7 +93,7 @@ func NewMeta(user *Account, ip, msg string, groups ...string) *Meta {
 }
 
 func FromMeta(line string) (*Meta, error) {
-	split := strings.SplitN(line, "|", 7)
+	split := strings.SplitN(line, "|", 5)
 	if len(split) != 5 {
 		return nil, fmt.Errorf("invalid line format: %s", line)
 	}

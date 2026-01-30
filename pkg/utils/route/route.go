@@ -61,21 +61,23 @@ func ApiBind(ah ApiHandler) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
+		var data []byte
 		if d, ok := result.(string); ok {
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(d))
-			return
+			data = []byte(d)
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			var err error
+			data, err = json.Marshal(result)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(err.Error()))
+				return
+			}
+			w.Header().Set("ETag", fmt.Sprintf("\"%x\"", sha256.Sum256(data)))
 		}
-		w.Header().Set("Content-Type", "application/json")
-		marshal, err := json.Marshal(result)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(err.Error()))
-		}
-		w.Header().Set("ETag", fmt.Sprintf("\"%x\"", sha256.Sum256(marshal)))
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(marshal)
+		_, _ = w.Write(data)
 	}
 }
 
