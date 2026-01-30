@@ -11,8 +11,7 @@ import (
 )
 
 func ZoneAdd(ctx *route.WebRequest) error {
-	cfg, f := ctx.Content.SyncZones.WithReadWrite()
-	defer f()
+	cfg := ctx.Content.SyncZones
 	zone := ctx.FormValue("zone")
 	if err := cfg.AddZone(zone); err != nil {
 		return self_errors.BadRequestErrorf("添加区域失败. %s", err.Error())
@@ -22,8 +21,7 @@ func ZoneAdd(ctx *route.WebRequest) error {
 }
 
 func ZoneDelete(ctx *route.WebRequest) error {
-	cfg, f := ctx.Content.SyncZones.WithReadWrite()
-	defer f()
+	cfg := ctx.Content.SyncZones
 	zone := ctx.FormValue("zone")
 	if err := cfg.RemoveZone(zone); err != nil {
 		return self_errors.BadRequestErrorf("删除区域失败. %s", err.Error())
@@ -33,8 +31,7 @@ func ZoneDelete(ctx *route.WebRequest) error {
 }
 
 func ZoneRecordMod(ctx *route.WebRequest) error {
-	cfg, f := ctx.Content.SyncZones.WithReadWrite()
-	defer f()
+	cfg := ctx.Content.SyncZones
 	zone := ctx.PathValue("zone")
 	dnsName := ctx.FormValue("name")
 	action := ctx.FormValue("action")
@@ -80,8 +77,7 @@ func ZoneRecordDel(ctx *route.WebRequest) error {
 	dnsName := ctx.FormValue("name")
 	indexStr := ctx.FormValue("index")
 	index, err := strconv.Atoi(indexStr)
-	cfg, f := ctx.Content.SyncZones.WithReadWrite()
-	defer f()
+	cfg := ctx.Content.SyncZones
 	if err != nil {
 		return self_errors.BadRequestErrorf("删除失败， %s", err.Error())
 	}

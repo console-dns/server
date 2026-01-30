@@ -51,9 +51,7 @@ func LoginPost(ctx *route.WebRequest) error {
 	if err != nil {
 		return err
 	}
-	ctx.Content.SyncSessions.ReadWrite(func(session *auth.Session) {
-		session.Sessions[token] = state
-	})
+	ctx.Content.SyncSessions.Sessions[token] = state
 	ctx.W.Header().Add("Set-Cookie", "session="+token)
 	ctx.PushLogByUser(logs.NewAccount("user", username), "用户登录", "auth", "session", "login", username)
 	log.Printf("新用户登录： %s, 来自: %s", token, state.IpAddr.String())
@@ -72,9 +70,7 @@ func clearCookies(w http.ResponseWriter, r *http.Request) {
 func LogoutGet(ctx *route.WebRequest) error {
 	log.Printf("注销会话 %s", ctx.LoginMeta.Session)
 	ctx.PushLog("用户 $4 注销会话", "auth", "session", "logout", ctx.LoginMeta.User().Name)
-	ctx.Content.SyncSessions.ReadWrite(func(session *auth.Session) {
-		delete(session.Sessions, ctx.LoginMeta.Session)
-	})
+	delete(ctx.Content.SyncSessions.Sessions, ctx.LoginMeta.Session)
 	clearCookies(ctx.W, ctx.Request)
 	return nil
 }

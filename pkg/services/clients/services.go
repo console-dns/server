@@ -11,8 +11,7 @@ import (
 )
 
 func ClientAdd(ctx *route.WebRequest) error {
-	cfg, f := ctx.Content.SyncTokens.WithReadWrite()
-	defer f()
+	cfg := ctx.Content.SyncTokens
 	if err := cfg.NewClient(ctx.FormValue("name"), clients_model.TypeClient); err != nil {
 		return self_errors.BadRequestErrorf(err.Error())
 	}
@@ -21,8 +20,7 @@ func ClientAdd(ctx *route.WebRequest) error {
 }
 
 func ClientDel(ctx *route.WebRequest) error {
-	cfg, f := ctx.Content.SyncTokens.WithReadWrite()
-	defer f()
+	cfg := ctx.Content.SyncTokens
 	if err := cfg.Delete(ctx.PathValue("client")); err != nil {
 		return self_errors.BadRequestErrorf(err.Error())
 	}

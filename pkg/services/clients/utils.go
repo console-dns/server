@@ -9,11 +9,9 @@ import (
 type ClientStatus struct {
 	Name string
 	*clients.Client
-	close func()
 }
 
 func (receiver *ClientStatus) Close() {
-	receiver.close()
 }
 
 func tryClient(ctx *route.WebRequest, rw bool) (*ClientStatus, error) {
@@ -21,21 +19,13 @@ func tryClient(ctx *route.WebRequest, rw bool) (*ClientStatus, error) {
 	if client == "" {
 		return nil, errors.New("客户端名称格式错误")
 	}
-	var cfg *clients.Clients
-	var f func()
-	if rw {
-		cfg, f = ctx.Content.SyncTokens.WithReadWrite()
-	} else {
-		cfg, f = ctx.Content.SyncTokens.WithReadOnly()
-	}
+	cfg := ctx.Content.SyncTokens
 	c := cfg.Get(client)
 	if c == nil {
-		f()
 		return nil, errors.New("客户端不存在")
 	}
 	return &ClientStatus{
 		Name:   client,
 		Client: c,
-		close:  f,
 	}, nil
 }

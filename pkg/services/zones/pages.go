@@ -7,8 +7,7 @@ import (
 )
 
 func ZoneRootPage(ctx *route.WebRequest) error {
-	cfg, f := ctx.Content.SyncZones.WithReadOnly()
-	defer f()
+	cfg := ctx.Content.SyncZones
 	zones := cfg.ListZones()
 	sort.Strings(zones)
 	return ctx.WritePageTemplate("zones/pages/zones", map[string]any{

@@ -9,19 +9,18 @@ import (
 	clients_model "github.com/console-dns/server/pkg/models/clients"
 	logs_model "github.com/console-dns/server/pkg/models/logs"
 	zones_model "github.com/console-dns/server/pkg/models/zones"
-	"github.com/console-dns/server/pkg/utils"
 	"github.com/robfig/cron/v3"
 	"gopkg.d7z.net/middleware/kv"
 )
 
 // Content 程序信息
 type Content struct {
-	Config       *settings.StaticConfig                      // 静态配置
-	Storage      kv.CloserKV                                 // 存储
-	SyncSessions *utils.DataRwLocker[*auth.Session]          // 用户会话管理
-	SyncZones    *utils.DataRwLocker[*zones_model.Zones]     // DNS 区域
-	SyncTokens   *utils.DataRwLocker[*clients_model.Clients] // 服务账户的 token
-	Logs         logs_model.ConsoleLog                       // 审计日志
+	Config       *settings.StaticConfig // 静态配置
+	Storage      kv.CloserKV            // 存储
+	SyncSessions *auth.Session          // 用户会话管理
+	SyncZones    *zones_model.Zones     // DNS 区域
+	SyncTokens   *clients_model.Clients // 服务账户的 token
+	Logs         logs_model.ConsoleLog  // 审计日志
 	cron         *cron.Cron
 }
 
@@ -56,9 +55,9 @@ func NewContent(configPath string) (*Content, error) {
 		cron:         cron.New(),
 		Config:       staticCfg,
 		Storage:      storage,
-		SyncSessions: utils.NewDataRwLocker(sessions),
-		SyncZones:    utils.NewDataRwLocker(zones),
-		SyncTokens:   utils.NewDataRwLocker(tokens),
+		SyncSessions: sessions,
+		SyncZones:    zones,
+		SyncTokens:   tokens,
 		Logs:         kvLog,
 	}
 	_, _ = content.cron.AddFunc("@every 1m", func() {
@@ -72,24 +71,14 @@ func NewContent(configPath string) (*Content, error) {
 }
 
 func (c *Content) Refresh() error {
-	var err error
-	c.SyncSessions.ReadWrite(func(session *auth.Session) {
-		err = session.Refresh()
-	})
-	return err
+	return c.SyncSessions.Refresh()
 }
 
 func (c *Content) Close() error {
 	ctx := context.Background()
-	c.SyncZones.ReadWrite(func(zones *zones_model.Zones) {
-		_ = zones.Flush(ctx)
-	})
-	c.SyncTokens.ReadWrite(func(tokens *clients_model.Clients) {
-		_ = tokens.Flush(ctx)
-	})
-	c.SyncSessions.ReadWrite(func(zs *auth.Session) {
-		_ = zs.Flush(ctx)
-	})
+	_ = c.SyncZones.Flush(ctx)
+	_ = c.SyncTokens.Flush(ctx)
+	_ = c.SyncSessions.Flush(ctx)
 	c.cron.Stop()
 	return c.Storage.Close()
 }

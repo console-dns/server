@@ -1,17 +1,67 @@
 package zones
 
 import (
+	"encoding/json"
+
 	self_errors "github.com/console-dns/server/pkg/errors"
 	zones_model "github.com/console-dns/server/pkg/models/zones"
 	"github.com/console-dns/server/pkg/utils"
 	"github.com/console-dns/server/pkg/utils/route"
 )
 
+func ApiCreateZone(ctx *route.ApiRequest) (any, error) {
+	zone := ctx.PathValue("zone")
+	if zone == "" {
+		// Try to get from body if path is empty (though usually it's in path in REST)
+		type req struct {
+			Zone string `json:"zone"`
+		}
+		var r req
+		_ = json.Unmarshal([]byte(ctx.Body), &r)
+		zone = r.Zone
+	}
+
+	if err := utils.RegexHost.Valid(zone); err != nil {
+		return nil, self_errors.BadRequestErrorf("区域名称不合法")
+	}
+
+	zones := ctx.Content.SyncZones
+	clients := ctx.Content.SyncTokens
+	token := clients.Get(ctx.Client)
+	if !token.VerifyRule(zone, "*", "*").CanWrite() {
+		return nil, self_errors.ForbiddenErrorf("用户没有操作此 dns 区域的权限")
+	}
+
+	if err := zones.AddZone(zone); err != nil {
+		return nil, self_errors.BadRequestErrorf("添加区域失败: %s", err.Error())
+	}
+	ctx.PushLog("新增区域 $2", "zones", zone, "create")
+	return "创建成功", nil
+}
+
+func ApiDeleteZone(ctx *route.ApiRequest) (any, error) {
+	zone := ctx.PathValue("zone")
+	if err := utils.RegexHost.Valid(zone); err != nil {
+		return nil, self_errors.BadRequestErrorf("区域名称不合法")
+	}
+
+	zones := ctx.Content.SyncZones
+	clients := ctx.Content.SyncTokens
+	token := clients.Get(ctx.Client)
+	if !token.VerifyRule(zone, "*", "*").CanDelete() {
+		return nil, self_errors.ForbiddenErrorf("用户没有操作此 dns 区域的权限")
+	}
+
+	if err := zones.RemoveZone(zone); err != nil {
+		return nil, self_errors.BadRequestErrorf("删除区域失败: %s", err.Error())
+	}
+	ctx.PushLog("删除区域 $2", "zones", zone, "remove")
+	return "删除成功", nil
+}
+
 func ApiListZones(ctx *route.ApiRequest) (any, error) {
-	zones, zUnlock := ctx.Content.SyncZones.WithReadOnly()
-	clients, cUnlock := ctx.Content.SyncTokens.WithReadOnly()
-	defer zUnlock()
-	defer cUnlock()
+	zones := ctx.Content.SyncZones
+	clients := ctx.Content.SyncTokens
 	client := clients.Get(ctx.Client)
 	result := zones_model.NewZones()
 
@@ -34,10 +84,8 @@ func ApiListZone(ctx *route.ApiRequest) (any, error) {
 	if err := utils.RegexHost.Valid(zone); err != nil {
 		return nil, self_errors.BadRequestErrorf("区域名称不合法")
 	}
-	zones, zUnlock := ctx.Content.SyncZones.WithReadOnly()
-	clients, cUnlock := ctx.Content.SyncTokens.WithReadOnly()
-	defer zUnlock()
-	defer cUnlock()
+	zones := ctx.Content.SyncZones
+	clients := ctx.Content.SyncTokens
 	token := clients.Get(ctx.Client)
 	result := zones_model.NewZones()
 	if zones.GetZone(zone) == nil {
@@ -59,10 +107,8 @@ func CreateRecord(ctx *route.ApiRequest) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	zones, zUnlock := ctx.Content.SyncZones.WithReadWrite()
-	clients, cUnlock := ctx.Content.SyncTokens.WithReadWrite()
-	defer zUnlock()
-	defer cUnlock()
+	zones := ctx.Content.SyncZones
+	clients := ctx.Content.SyncTokens
 	token := clients.Get(ctx.Client)
 	if !token.VerifyRule(data.zone, data.record, data.dnsType).CanWrite() {
 		return nil, self_errors.ForbiddenErrorf("用户没有操作此 dns 记录的权限")
@@ -91,10 +137,8 @@ func ModRecord(ctx *route.ApiRequest) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	zones, zUnlock := ctx.Content.SyncZones.WithReadWrite()
-	clients, cUnlock := ctx.Content.SyncTokens.WithReadWrite()
-	defer zUnlock()
-	defer cUnlock()
+	zones := ctx.Content.SyncZones
+	clients := ctx.Content.SyncTokens
 	token := clients.Get(ctx.Client)
 	if !token.VerifyRule(data.zone, data.record, data.dnsType).CanWrite() {
 		return nil, self_errors.ForbiddenErrorf("用户没有操作此 dns 记录的权限")
@@ -125,10 +169,8 @@ func DeleteRecord(ctx *route.ApiRequest) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	zones, zUnlock := ctx.Content.SyncZones.WithReadWrite()
-	clients, cUnlock := ctx.Content.SyncTokens.WithReadWrite()
-	defer zUnlock()
-	defer cUnlock()
+	zones := ctx.Content.SyncZones
+	clients := ctx.Content.SyncTokens
 	token := clients.Get(ctx.Client)
 	if !token.VerifyRule(data.zone, data.record, data.dnsType).CanDelete() {
 		return nil, self_errors.ForbiddenErrorf("用户没有操作此 dns 记录的权限")

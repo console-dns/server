@@ -9,8 +9,7 @@ import (
 )
 
 func ClientRootPage(ctx *route.WebRequest) error {
-	cfg, f := ctx.Content.SyncTokens.WithReadOnly()
-	defer f()
+	cfg := ctx.Content.SyncTokens
 	keys := cfg.ListByGroup(clients_model.TypeClient)
 	sort.Slice(keys, func(i, j int) bool {
 		return keys[i] < keys[j]

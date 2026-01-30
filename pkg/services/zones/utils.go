@@ -15,11 +15,9 @@ import (
 type ZoneStatus struct {
 	Name string
 	*zones_model.Zone
-	_close func()
 }
 
 func (receiver *ZoneStatus) Close() {
-	receiver._close()
 }
 
 func tryZone(ctx *route.WebRequest, rw bool) (*ZoneStatus, error) {
@@ -28,22 +26,14 @@ func tryZone(ctx *route.WebRequest, rw bool) (*ZoneStatus, error) {
 	if err != nil {
 		return nil, self_errors.BadRequestErrorf("区域不存在")
 	}
-	var cfg *zones_model.Zones
-	var f func()
-	if rw {
-		cfg, f = ctx.Content.SyncZones.WithReadWrite()
-	} else {
-		cfg, f = ctx.Content.SyncZones.WithReadOnly()
-	}
+	cfg := ctx.Content.SyncZones
 	z := cfg.GetZone(zone)
 	if z == nil {
-		f()
 		return nil, self_errors.BadRequestErrorf("区域不存在")
 	}
 	return &ZoneStatus{
-		Name:   zone,
-		Zone:   z,
-		_close: f,
+		Name: zone,
+		Zone: z,
 	}, nil
 }
 

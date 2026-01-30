@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/console-dns/server/pkg/models/auth"
-	"github.com/console-dns/server/pkg/models/clients"
 	"github.com/console-dns/server/pkg/utils/route"
 	"github.com/mileusna/useragent"
 )
@@ -30,31 +28,27 @@ type PageSessionsGetResult struct {
 
 func PageSessionsGet(ctx *route.WebRequest) error {
 	result := make([]*PageSessionsGetResult, 0)
-	ctx.Content.SyncSessions.ReadOnly(func(session *auth.Session) {
-		for s, state := range session.Sessions {
-			agent := useragent.Parse(state.UserAgent)
-			result = append(result, &PageSessionsGetResult{
-				Self: ctx.LoginMeta.Session == s,
-				Name: s[0:4],
-				Type: "web",
-				Last: state.UpdateTime,
-				IP:   state.IpAddr,
-				UA:   &agent,
-			})
-		}
-	})
-	ctx.Content.SyncTokens.ReadOnly(func(clients *clients.Clients) {
-		for _, s := range clients.GetClientStatus() {
-			userAgent := useragent.Parse(s.UA)
-			result = append(result, &PageSessionsGetResult{
-				Type: "api",
-				Name: s.Name,
-				Last: s.At,
-				IP:   s.IP,
-				UA:   &userAgent,
-			})
-		}
-	})
+	for s, state := range ctx.Content.SyncSessions.Sessions {
+		agent := useragent.Parse(state.UserAgent)
+		result = append(result, &PageSessionsGetResult{
+			Self: ctx.LoginMeta.Session == s,
+			Name: s[0:4],
+			Type: "web",
+			Last: state.UpdateTime,
+			IP:   state.IpAddr,
+			UA:   &agent,
+		})
+	}
+	for _, s := range ctx.Content.SyncTokens.GetClientStatus() {
+		userAgent := useragent.Parse(s.UA)
+		result = append(result, &PageSessionsGetResult{
+			Type: "api",
+			Name: s.Name,
+			Last: s.At,
+			IP:   s.IP,
+			UA:   &userAgent,
+		})
+	}
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Last.After(result[j].Last)
 	})

@@ -22,8 +22,14 @@ func Route(r chi.Router) {
 
 func ApiRoute(r chi.Router) {
 	r.Get("/", route.ApiBind(ApiListZones))
+	r.Post("/", route.ApiBind(ApiCreateZone))
+	r.Post("/{zone}", route.ApiBind(ApiCreateZone))
+	r.Delete("/{zone}", route.ApiBind(ApiDeleteZone))
 	r.Get("/{zone}", route.ApiBind(ApiListZone))
 	r.Post("/{zone}/{record}/{type}", route.ApiBind(CreateRecord))
+	r.Put("/{zone}/{record}/{type}", route.ApiBind(ModRecord))
+	r.Delete("/{zone}/{record}/{type}", route.ApiBind(DeleteRecord))
+	// Backward compatibility
 	r.Post("/{zone}/{record}/{type}/mod", route.ApiBind(ModRecord))
 	r.Post("/{zone}/{record}/{type}/delete", route.ApiBind(DeleteRecord))
 }
