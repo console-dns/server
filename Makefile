@@ -8,11 +8,7 @@ DEBUG ?= false
 
 ifdef PROD
 LD_FLAGS :=  \
-	-X $(GROUP)/cmd.DefConfigPath=/etc/$(SVC_NAME)/server.yaml \
-	-X $(GROUP)/pkg/content/settings.ConfigLog=/var/log/$(SVC_NAME)/logs.csv \
-	-X $(GROUP)/pkg/content/settings.ConfigSession=/var/lib/$(SVC_NAME)/sessions.yaml \
-	-X $(GROUP)/pkg/content/settings.ConfigToken=/var/lib/$(SVC_NAME)/clients.yaml \
-	-X $(GROUP)/pkg/content/settings.ConfigZone=/var/lib/$(SVC_NAME)/zones.yaml
+	-X $(GROUP)/cmd.DefConfigPath=/etc/$(SVC_NAME)/server.yaml
 endif
 
 

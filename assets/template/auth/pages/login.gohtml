@@ -22,26 +22,11 @@
         border-bottom-left-radius: 0;
     }
 
-    {{- if contains "2fa" .Data.Error }}
-    .form-sign-in input[type="password"] {
-        margin-bottom: -2px;
-        border-radius: 0;
-    }
-
-    .form-sign-in input[name="2fa"] {
-        margin-bottom: 10px;
-        border-top-left-radius: 0;
-        border-top-right-radius: 0;
-    }
-
-    {{- else  }}
     .form-sign-in input[type="password"] {
         margin-bottom: 10px;
         border-top-left-radius: 0;
         border-top-right-radius: 0;
     }
-
-    {{- end }}
 
 
 </style>
@@ -60,22 +45,8 @@
                 <label for="floatingPassword">密码</label>
             </div>
 
-            {{- if contains "2fa" .Data.Error   }}
-                <div class="form-floating">
-                    <input type="text" pattern="\d*" name="2fa" maxlength="6" minlength="6" class="form-control"
-                           id="floating2fa" placeholder="TOTP 验证码">
-                    <label for="floating2fa">TOTP验证码</label>
-                </div>
-            {{- end }}
             {{- if eq .Data.Error "auth"  }}
                 <p class="text-danger">用户名或密码错误</p>
-            {{- end }}
-            {{- if contains "2fa" .Data.Error   }}
-                {{- if eq "2fa" .Data.Error   }}
-                    <p class="text-warning">请输入TOTP验证码</p>
-                {{- else }}
-                    <p class="text-danger">TOTP验证码错误</p>
-                {{- end }}
             {{- end }}
 
             <button class="btn btn-primary w-100 py-2" type="submit">登录</button>

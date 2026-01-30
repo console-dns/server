@@ -1,6 +1,7 @@
 package content
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/console-dns/server/pkg/content/settings"
@@ -10,11 +11,13 @@ import (
 	zones_model "github.com/console-dns/server/pkg/models/zones"
 	"github.com/console-dns/server/pkg/utils"
 	"github.com/robfig/cron/v3"
+	"gopkg.d7z.net/middleware/kv"
 )
 
 // Content 程序信息
 type Content struct {
 	Config       *settings.StaticConfig                      // 静态配置
+	Storage      kv.CloserKV                                 // 存储
 	SyncSessions *utils.DataRwLocker[*auth.Session]          // 用户会话管理
 	SyncZones    *utils.DataRwLocker[*zones_model.Zones]     // DNS 区域
 	SyncTokens   *utils.DataRwLocker[*clients_model.Clients] // 服务账户的 token
@@ -27,31 +30,36 @@ func NewContent(configPath string) (*Content, error) {
 	if err != nil {
 		return nil, err
 	}
-	sessions, err := auth.FromSession(staticCfg)
+	ctx := context.Background()
+	storage, err := kv.NewKVFromURL(staticCfg.Storage.DSN)
 	if err != nil {
 		return nil, err
 	}
-	zones, err := zones_model.FromZones(staticCfg)
+
+	sessions, err := auth.FromSession(ctx, staticCfg, storage)
 	if err != nil {
 		return nil, err
 	}
-	tokens, err := clients_model.FromClients(staticCfg)
+	zones, err := zones_model.FromZones(ctx, storage)
 	if err != nil {
 		return nil, err
 	}
-	fsLog, err := logs_model.NewFileLog(staticCfg.Storage.Log)
+	tokens, err := clients_model.FromClients(ctx, storage)
 	if err != nil {
 		return nil, err
 	}
-	wrapper := NewSystemLogs(fsLog)
+	kvLog := logs_model.NewKVLog(storage)
+
+	wrapper := NewSystemLogs(kvLog)
 	sessions.Logs = wrapper
 	content := &Content{
 		cron:         cron.New(),
 		Config:       staticCfg,
+		Storage:      storage,
 		SyncSessions: utils.NewDataRwLocker(sessions),
 		SyncZones:    utils.NewDataRwLocker(zones),
 		SyncTokens:   utils.NewDataRwLocker(tokens),
-		Logs:         fsLog,
+		Logs:         kvLog,
 	}
 	_, _ = content.cron.AddFunc("@every 1m", func() {
 		err := content.Refresh()
@@ -72,17 +80,18 @@ func (c *Content) Refresh() error {
 }
 
 func (c *Content) Close() error {
+	ctx := context.Background()
 	c.SyncZones.ReadWrite(func(zones *zones_model.Zones) {
-		_ = zones.Flush()
+		_ = zones.Flush(ctx)
 	})
 	c.SyncTokens.ReadWrite(func(tokens *clients_model.Clients) {
-		_ = tokens.Flush()
+		_ = tokens.Flush(ctx)
 	})
 	c.SyncSessions.ReadWrite(func(zs *auth.Session) {
-		_ = zs.Flush()
+		_ = zs.Flush(ctx)
 	})
 	c.cron.Stop()
-	return nil
+	return c.Storage.Close()
 }
 
 type SystemLogs struct {

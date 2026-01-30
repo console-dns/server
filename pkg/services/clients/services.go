@@ -5,8 +5,8 @@ import (
 
 	self_errors "github.com/console-dns/server/pkg/errors"
 	clients_model "github.com/console-dns/server/pkg/models/clients"
+	"github.com/console-dns/server/pkg/utils"
 	"github.com/console-dns/server/pkg/utils/route"
-	spec_utils "github.com/console-dns/spec/utils"
 	"github.com/pkg/errors"
 )
 
@@ -32,9 +32,9 @@ func ClientDel(ctx *route.WebRequest) error {
 
 func ClientAllowIpsAdd(ctx *route.WebRequest) error {
 	ip := ctx.FormValue("ip")
-	err := spec_utils.RegexIPv4.Valid(ip)
+	err := utils.RegexIPv4.Valid(ip)
 	if err != nil {
-		err = spec_utils.RegexIPv6.Valid(ip)
+		err = utils.RegexIPv6.Valid(ip)
 	}
 	if err != nil {
 		return errors.New("未知 IP 类型")

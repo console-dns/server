@@ -3,21 +3,18 @@ package zones
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"text/scanner"
 
-	"github.com/console-dns/spec/models"
-	spec_utils "github.com/console-dns/spec/utils"
+	zones_model "github.com/console-dns/server/pkg/models/zones"
+	"github.com/console-dns/server/pkg/utils"
 
 	self_errors "github.com/console-dns/server/pkg/errors"
 	"github.com/console-dns/server/pkg/utils/route"
-	spec_model "github.com/console-dns/spec/models"
-	"github.com/pkg/errors"
 )
 
 type ZoneStatus struct {
 	Name string
-	*spec_model.Zone
+	*zones_model.Zone
 	_close func()
 }
 
@@ -27,7 +24,7 @@ func (receiver *ZoneStatus) Close() {
 
 func tryZone(ctx *route.WebRequest, rw bool) (*ZoneStatus, error) {
 	zone := ctx.PathValue("zone")
-	err := spec_utils.RegexHost.Valid(zone)
+	err := utils.RegexHost.Valid(zone)
 	if err != nil {
 		return nil, self_errors.BadRequestErrorf("区域不存在")
 	}
@@ -68,150 +65,149 @@ func getOrNil[V any](data []*V, index int) *V {
 	return data[index]
 }
 
-func modRecord(r *models.Record, dnsType string, oldData func(string) string, newData func(string) string) error {
+func modRecord(r *zones_model.Record, dnsType string, oldData func(string) string, newData func(string) string) error {
 	switch dnsType {
 	case "A":
-		oRecord, err := models.FromRecordA(oldData)
+		oRecord, err := zones_model.FromRecordA(oldData)
 		if err != nil {
 			return err
 		}
-		record, err := models.FromRecordA(newData)
+		record, err := zones_model.FromRecordA(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModA(oRecord, record)
 	case "AAAA":
-		oRecord, err := models.FromRecordAAAA(oldData)
+		oRecord, err := zones_model.FromRecordAAAA(oldData)
 		if err != nil {
 			return err
 		}
-		record, err := models.FromRecordAAAA(newData)
+		record, err := zones_model.FromRecordAAAA(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModAAAA(oRecord, record)
 	case "TXT":
-		oldRecord, err := models.FromRecordTXT(oldData)
+		oldRecord, err := zones_model.FromRecordTXT(oldData)
 		if err != nil {
 			return err
 		}
-		record, err := models.FromRecordTXT(newData)
+		record, err := zones_model.FromRecordTXT(newData)
 		if err != nil {
 			return err
 		}
-		err = r.ModTXT(oldRecord, record)
+		return r.ModTXT(oldRecord, record)
 	case "CNAME":
-		oldRecord, err := models.FromRecordCNAME(oldData)
+		oldRecord, err := zones_model.FromRecordCNAME(oldData)
 		if err != nil {
 			return err
 		}
-		record, err := models.FromRecordCNAME(newData)
+		record, err := zones_model.FromRecordCNAME(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModCNAME(oldRecord, record)
 	case "NS":
-		oldRecord, err := models.FromRecordNS(oldData)
+		oldRecord, err := zones_model.FromRecordNS(oldData)
 		if err != nil {
 			return err
 		}
-		record, err := models.FromRecordNS(newData)
+		record, err := zones_model.FromRecordNS(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModNS(oldRecord, record)
 	case "MX":
-		oldRecord, err := models.FromRecordMX(oldData)
+		oldRecord, err := zones_model.FromRecordMX(oldData)
 		if err != nil {
 			return err
 		}
-		record, err := models.FromRecordMX(newData)
+		record, err := zones_model.FromRecordMX(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModMX(oldRecord, record)
 	case "SRV":
-		oldRecord, err := models.FromRecordSRV(oldData)
+		oldRecord, err := zones_model.FromRecordSRV(oldData)
 		if err != nil {
 			return err
 		}
-		record, err := models.FromRecordSRV(newData)
+		record, err := zones_model.FromRecordSRV(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModSRV(oldRecord, record)
 	case "SOA":
-		oldSOA, err := models.FromRecordSOA(oldData)
+		oldSOA, err := zones_model.FromRecordSOA(oldData)
 		if err != nil {
 			return err
 		}
-		data, err := models.FromRecordSOA(newData)
+		data, err := zones_model.FromRecordSOA(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModSOA(oldSOA, data)
 	case "CAA":
-		oldRecord, err := models.FromRecordCAA(newData)
+		oldRecord, err := zones_model.FromRecordCAA(oldData)
 		if err != nil {
 			return err
 		}
-		data, err := models.FromRecordCAA(newData)
+		data, err := zones_model.FromRecordCAA(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModCAA(oldRecord, data)
 	default:
-		return errors.New("未知类型")
+		return fmt.Errorf("未知类型")
 	}
-	return nil
 }
 
-func modRecordWithIndex(r *models.Record, dnsType string, oldIndex int, newData func(string) string) error {
+func modRecordWithIndex(r *zones_model.Record, dnsType string, oldIndex int, newData func(string) string) error {
 	switch dnsType {
 	case "A":
-		recordA, err := models.FromRecordA(newData)
+		recordA, err := zones_model.FromRecordA(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModA(getOrNil(r.A, oldIndex), recordA)
 	case "AAAA":
-		aaaa, err := models.FromRecordAAAA(newData)
+		aaaa, err := zones_model.FromRecordAAAA(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModAAAA(getOrNil(r.AAAA, oldIndex), aaaa)
 	case "TXT":
-		txt, err := models.FromRecordTXT(newData)
+		txt, err := zones_model.FromRecordTXT(newData)
 		if err != nil {
 			return err
 		}
-		err = r.ModTXT(getOrNil(r.TXT, oldIndex), txt)
+		return r.ModTXT(getOrNil(r.TXT, oldIndex), txt)
 	case "CNAME":
-		data, err := models.FromRecordCNAME(newData)
+		data, err := zones_model.FromRecordCNAME(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModCNAME(getOrNil(r.CNAME, oldIndex), data)
 	case "NS":
-		data, err := models.FromRecordNS(newData)
+		data, err := zones_model.FromRecordNS(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModNS(getOrNil(r.NS, oldIndex), data)
 	case "MX":
-		data, err := models.FromRecordMX(newData)
+		data, err := zones_model.FromRecordMX(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModMX(getOrNil(r.MX, oldIndex), data)
 	case "SRV":
-		data, err := models.FromRecordSRV(newData)
+		data, err := zones_model.FromRecordSRV(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModSRV(getOrNil(r.SRV, oldIndex), data)
 	case "SOA":
-		data, err := models.FromRecordSOA(newData)
+		data, err := zones_model.FromRecordSOA(newData)
 		if err != nil {
 			return err
 		}
@@ -221,15 +217,14 @@ func modRecordWithIndex(r *models.Record, dnsType string, oldIndex int, newData 
 			return r.ModSOA(r.SOA, data)
 		}
 	case "CAA":
-		data, err := models.FromRecordCAA(newData)
+		data, err := zones_model.FromRecordCAA(newData)
 		if err != nil {
 			return err
 		}
 		return r.ModCAA(getOrNil(r.CAA, oldIndex), data)
 	default:
-		return errors.New("未知类型")
+		return fmt.Errorf("未知类型")
 	}
-	return nil
 }
 
 type mergeDataMod struct {
@@ -308,15 +303,15 @@ func parseCommitData(ctx *route.ApiRequest) (*commitData, error) {
 
 func checkParams(ctx *route.ApiRequest) (string, string, string, error) {
 	zone := ctx.PathValue("zone")
-	if err := spec_utils.RegexHost.Valid(zone); err != nil {
+	if err := utils.RegexHost.Valid(zone); err != nil {
 		return "", "", "", self_errors.BadRequestErrorf("区域名称不合法")
 	}
 	record := ctx.PathValue("record")
-	if err := spec_utils.RegexDnsName.Valid(record); err != nil {
+	if err := utils.RegexDnsName.Valid(record); err != nil {
 		return "", "", "", self_errors.BadRequestErrorf("记录名称不合法")
 	}
-	dnsType := strings.ToUpper(ctx.PathValue("type"))
-	if err := spec_utils.RegexDnsType.Valid(dnsType); err != nil {
+	dnsType := ctx.PathValue("type")
+	if err := utils.RegexDnsType.Valid(dnsType); err != nil {
 		return "", "", "", self_errors.BadRequestErrorf("DNS 类型不合法")
 	}
 	return zone, record, dnsType, nil

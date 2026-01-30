@@ -2,6 +2,7 @@ package auth
 
 //goland:noinspection GoSnakeCaseUsage
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -13,10 +14,11 @@ import (
 	logs_model "github.com/console-dns/server/pkg/models/logs"
 	"github.com/console-dns/server/pkg/utils"
 	"github.com/pkg/errors"
+	"gopkg.d7z.net/middleware/kv"
 )
 
 type Session struct {
-	localPath   string
+	storage     kv.KV
 	sessionTtl  time.Duration
 	ipTtl       time.Duration
 	hackerTtl   time.Duration
@@ -27,17 +29,17 @@ type Session struct {
 	Logs        logs_model.PushLog        `json:"-" yaml:"-" toml:"-" json:"-"`
 }
 
-func FromSession(config *settings.StaticConfig) (*Session, error) {
+func FromSession(ctx context.Context, config *settings.StaticConfig, storage kv.KV) (*Session, error) {
 	result := &Session{
+		storage:   storage,
 		Sessions:  make(map[string]*SessionState),
 		DenyIPs:   make(map[string]*DenyIpState),
 		HackerIPs: make(map[string]*HackerIpState),
 	}
-	err := utils.AutoUnmarshal(config.Storage.Session, result, true)
+	err := utils.AutoKVUnmarshal(ctx, storage, "sessions.json", result)
 	if err != nil {
 		return nil, errors.Wrap(err, "session 配置解析失败")
 	}
-	result.localPath = config.Storage.Session
 	result.sessionTtl = config.Auth.SessionTTL
 	result.ipTtl = config.Auth.DenyTTL
 	result.hackerCount = config.Auth.HackerCount
@@ -109,8 +111,8 @@ func (s *Session) Refresh() error {
 	return nil
 }
 
-func (s *Session) Flush() error {
-	return utils.AutoMarshal(s.localPath, s)
+func (s *Session) Flush(ctx context.Context) error {
+	return utils.AutoKVMarshal(ctx, s.storage, "sessions.json", s)
 }
 
 func (s *Session) AddDenyIp(ip string) {

@@ -12,11 +12,9 @@ import (
 	"github.com/console-dns/server/pkg/models/logs"
 	"github.com/console-dns/server/pkg/utils/route"
 	"github.com/google/uuid"
-	"github.com/pquerna/otp/totp"
 )
 
 func LoginPost(ctx *route.WebRequest) error {
-	totpCode := ctx.FormValue("2fa")
 	authConfig := ctx.Content.Config.Auth
 	username := ctx.FormValue("account")
 
@@ -26,14 +24,6 @@ func LoginPost(ctx *route.WebRequest) error {
 		return errors.ErrorRedirect("/login?error=auth")
 	}
 
-	if authConfig.TotpSecret != "" && totpCode == "" {
-		return errors.ErrorRedirect("/login?error=2fa")
-	}
-	if authConfig.TotpSecret != "" && !totp.Validate(totpCode, authConfig.TotpSecret) {
-		ctx.TagHacker()
-		ctx.PushLogByUser(logs.NewAccount("user", "guest"), "totp 登录验证失败 $4", "auth", "session", "login", username)
-		return errors.ErrorRedirect("/login?error=2fa-error")
-	}
 	password := ctx.FormValue("password")
 	valid := false
 	if strings.HasPrefix(authConfig.Password, "argon2:") {

@@ -1,12 +1,14 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pkg/errors"
+	"gopkg.d7z.net/middleware/kv"
 	"gopkg.in/yaml.v3"
 )
 
@@ -48,4 +50,23 @@ func AutoUnmarshal(filePath string, result any, generate bool) error {
 		return toml.Unmarshal(data, result)
 	}
 	return errors.New("未知文件类型 : " + filePath)
+}
+
+func AutoKVMarshal(ctx context.Context, storage kv.KV, key string, result any) error {
+	data, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	return storage.Put(ctx, key, string(data), kv.TTLKeep)
+}
+
+func AutoKVUnmarshal(ctx context.Context, storage kv.KV, key string, result any) error {
+	data, err := storage.Get(ctx, key)
+	if err != nil {
+		if err == kv.ErrKeyNotFound {
+			return nil
+		}
+		return err
+	}
+	return json.Unmarshal([]byte(data), result)
 }

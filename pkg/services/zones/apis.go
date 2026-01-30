@@ -2,9 +2,9 @@ package zones
 
 import (
 	self_errors "github.com/console-dns/server/pkg/errors"
+	zones_model "github.com/console-dns/server/pkg/models/zones"
+	"github.com/console-dns/server/pkg/utils"
 	"github.com/console-dns/server/pkg/utils/route"
-	"github.com/console-dns/spec/models"
-	spec_utils "github.com/console-dns/spec/utils"
 	"github.com/pkg/errors"
 )
 
@@ -26,13 +26,14 @@ func ApiListZones(ctx *route.ApiRequest) (any, error) {
 	defer zUnlock()
 	defer cUnlock()
 	client := clients.Get(ctx.Client)
-	result := models.NewZones()
+	result := zones_model.NewZones()
 
 	for zoneName, zone := range zones.ListRecords() {
 		for recordName, record := range zone {
 			for _, dnsType := range recordTypes {
 				if client.VerifyRule(zoneName, recordName, dnsType).CanRead() {
-					result.CopyFrom(&record, zoneName, recordName, dnsType)
+					r := record // record is zones_model.Record
+					result.CopyFrom(&r, zoneName, recordName, dnsType)
 				}
 			}
 		}
@@ -43,7 +44,7 @@ func ApiListZones(ctx *route.ApiRequest) (any, error) {
 
 func ApiListZone(ctx *route.ApiRequest) (any, error) {
 	zone := ctx.PathValue("zone")
-	if err := spec_utils.RegexHost.Valid(zone); err != nil {
+	if err := utils.RegexHost.Valid(zone); err != nil {
 		return nil, self_errors.BadRequestErrorf("区域名称不合法")
 	}
 	zones, zUnlock := ctx.Content.SyncZones.WithReadOnly()
@@ -51,14 +52,15 @@ func ApiListZone(ctx *route.ApiRequest) (any, error) {
 	defer zUnlock()
 	defer cUnlock()
 	token := clients.Get(ctx.Client)
-	result := models.NewZones()
+	result := zones_model.NewZones()
 	if zones.GetZone(zone) == nil {
 		return nil, self_errors.NotfoundErrorf("区域不存在")
 	}
 	for recordName, record := range zones.GetRecords(zone) {
 		for _, dnsType := range recordTypes {
 			if token.VerifyRule(zone, recordName, dnsType).CanRead() {
-				result.CopyFrom(&record, zone, recordName, dnsType)
+				r := record // record is *zones_model.Record
+				result.CopyFrom(r, zone, recordName, dnsType)
 			}
 		}
 	}
@@ -85,7 +87,7 @@ func CreateRecord(ctx *route.ApiRequest) (any, error) {
 	}
 	r := z.Records[data.record]
 	if r == nil {
-		r = models.NewRecord()
+		r = zones_model.NewRecord()
 		z.Records[data.record] = r
 	}
 	err = modRecordWithIndex(r, data.dnsType, -1, func(s string) string {
@@ -117,7 +119,7 @@ func ModRecord(ctx *route.ApiRequest) (any, error) {
 	}
 	r := z.Records[data.record]
 	if r == nil {
-		r = models.NewRecord()
+		r = zones_model.NewRecord()
 		z.Records[data.record] = r
 	}
 	err = modRecord(r, data.dnsType, func(s string) string {
@@ -151,62 +153,63 @@ func DeleteRecord(ctx *route.ApiRequest) (any, error) {
 	}
 	r := z.Records[data.record]
 	if r == nil {
-		return nil, self_errors.BadRequestErrorf("记录不存在")
+		r = zones_model.NewRecord()
+		z.Records[data.record] = r
 	}
 	getValue := func(s string) string {
 		return data.items[s]
 	}
 	switch data.dnsType {
 	case "A":
-		if data, e := models.FromRecordA(getValue); e != nil {
+		if data, e := zones_model.FromRecordA(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveA(data)
 		}
 	case "AAAA":
-		if data, e := models.FromRecordAAAA(getValue); e != nil {
+		if data, e := zones_model.FromRecordAAAA(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveAAAA(data)
 		}
 	case "TXT":
-		if data, e := models.FromRecordTXT(getValue); e != nil {
+		if data, e := zones_model.FromRecordTXT(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveTXT(data)
 		}
 	case "CNAME":
-		if data, e := models.FromRecordCNAME(getValue); e != nil {
+		if data, e := zones_model.FromRecordCNAME(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveCNAME(data)
 		}
 	case "NS":
-		if data, e := models.FromRecordNS(getValue); e != nil {
+		if data, e := zones_model.FromRecordNS(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveNS(data)
 		}
 	case "MX":
-		if data, e := models.FromRecordMX(getValue); e != nil {
+		if data, e := zones_model.FromRecordMX(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveMX(data)
 		}
 	case "SRV":
-		if data, e := models.FromRecordSRV(getValue); e != nil {
+		if data, e := zones_model.FromRecordSRV(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveSRV(data)
 		}
 	case "CAA":
-		if data, e := models.FromRecordCAA(getValue); e != nil {
+		if data, e := zones_model.FromRecordCAA(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveCAA(data)
 		}
 	case "SOA":
-		if data, e := models.FromRecordSOA(getValue); e != nil {
+		if data, e := zones_model.FromRecordSOA(getValue); e != nil {
 			return nil, e
 		} else {
 			err = r.RemoveSOA(data)

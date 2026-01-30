@@ -1,20 +1,21 @@
 package clients
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"regexp"
 	"time"
 
-	"github.com/console-dns/server/pkg/content/settings"
 	"github.com/console-dns/server/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"gopkg.d7z.net/middleware/kv"
 )
 
 type Clients struct {
-	localPath string
-	Clients   map[string]*Client `json:"tokens" yaml:"tokens" toml:"tokens"`
+	storage kv.KV
+	Clients map[string]*Client `json:"tokens" yaml:"tokens" toml:"tokens"`
 }
 
 func (c *Clients) ListByGroup(clientType ClientType) []string {
@@ -65,24 +66,20 @@ func (c *Clients) GetClientStatus() []*ClientStatusResult {
 	return result
 }
 
-func FromClients(config *settings.StaticConfig) (*Clients, error) {
+func FromClients(ctx context.Context, storage kv.KV) (*Clients, error) {
 	result := &Clients{
+		storage: storage,
 		Clients: make(map[string]*Client),
 	}
-	err := utils.AutoUnmarshal(config.Storage.Token, result, true)
+	err := utils.AutoKVUnmarshal(ctx, storage, "clients.json", result)
 	if err != nil {
 		return nil, errors.Wrapf(err, "解析 client 失败")
 	}
-	err = utils.AutoMarshal(config.Storage.Token, result)
-	if err != nil {
-		return nil, errors.Wrapf(err, "无法写入 client 配置")
-	}
-	result.localPath = config.Storage.Token
 	return result, nil
 }
 
-func (c *Clients) Flush() error {
-	return utils.AutoMarshal(c.localPath, c)
+func (c *Clients) Flush(ctx context.Context) error {
+	return utils.AutoKVMarshal(ctx, c.storage, "clients.json", c)
 }
 
 type Client struct {

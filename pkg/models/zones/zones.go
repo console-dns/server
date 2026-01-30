@@ -1,28 +1,37 @@
 package zones
 
 import (
-	"github.com/console-dns/server/pkg/content/settings"
+	"context"
+
 	"github.com/console-dns/server/pkg/utils"
-	"github.com/console-dns/spec/models"
+	"gopkg.d7z.net/middleware/kv"
 )
 
 type Zones struct {
-	localPath     string
-	*models.Zones // 区域列表
+	storage   kv.KV
+	*ZoneData // 区域列表
 }
 
-func FromZones(cfg *settings.StaticConfig) (*Zones, error) {
-	data := models.NewZones()
-	err := utils.AutoUnmarshal(cfg.Storage.Zone, data, true)
+func FromZones(ctx context.Context, storage kv.KV) (*Zones, error) {
+	data := NewZones()
+	err := utils.AutoKVUnmarshal(ctx, storage, "zones.json", data)
 	if err != nil {
 		return nil, err
 	}
 	return &Zones{
-		localPath: cfg.Storage.Zone,
-		Zones:     data,
+		storage:  storage,
+		ZoneData: data,
 	}, nil
 }
 
-func (z *Zones) Flush() error {
-	return utils.AutoMarshal(z.localPath, z.Zones)
+func (z *Zones) Flush(ctx context.Context) error {
+	return utils.AutoKVMarshal(ctx, z.storage, "zones.json", z.ZoneData)
+}
+
+func (z *Zones) ListZones() []string {
+	res := make([]string, 0, len(z.Data))
+	for k := range z.Data {
+		res = append(res, k)
+	}
+	return res
 }

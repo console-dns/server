@@ -1,9 +1,5 @@
 package zones
 
-import (
-	"github.com/console-dns/spec/models"
-)
-
 var RecordTypes = []string{"A", "AAAA", "TXT", "CNAME", "NS", "MX", "SRV", "CAA", "SOA"}
 
 type DNSView struct {
@@ -24,7 +20,7 @@ func newPrintDNSGroup(name, t, value string, index int, ttl uint32) *DNSView {
 	}
 }
 
-func ToList(r *models.Record, group string) []*DNSView {
+func ToList(r *Record, group string) []*DNSView {
 	result := make([]*DNSView, 0)
 	for i, a := range r.A {
 		result = append(result, newPrintDNSGroup(group, "A", a.Ip.String(), i, a.Ttl))

@@ -3,8 +3,8 @@ package zones
 import (
 	"strconv"
 
-	zones_model "github.com/console-dns/spec/models"
-	spec_utils "github.com/console-dns/spec/utils"
+	zones_model "github.com/console-dns/server/pkg/models/zones"
+	"github.com/console-dns/server/pkg/utils"
 	"github.com/pkg/errors"
 
 	self_errors "github.com/console-dns/server/pkg/errors"
@@ -56,7 +56,7 @@ func ZoneRecordMod(ctx *route.WebRequest) error {
 		return self_errors.BadRequestErrorf("操作失败，区域不存在")
 	}
 
-	if err := spec_utils.RegexDnsName.Valid(dnsName); err != nil {
+	if err := utils.RegexDnsName.Valid(dnsName); err != nil {
 		return self_errors.BadRequestErrorf("操作失败,%s", err.Error())
 	}
 	recordType := ctx.FormValue("type")
